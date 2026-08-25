@@ -6,7 +6,10 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  ENTRY_FIELDS,
   entryFieldsSchema,
+  isEntryFieldName,
+  parseEntryField,
   fieldErrors,
   fractionToPercent,
   percentToFraction,
@@ -174,6 +177,66 @@ describe("entryFieldsSchema", () => {
   it("rejects fractional calories and blood pressure", () => {
     expect(entryFieldsSchema.safeParse({ consumedCals: "1500.5" }).success).toBe(false);
     expect(entryFieldsSchema.safeParse({ systolic: "128.5" }).success).toBe(false);
+  });
+});
+
+describe("parseEntryField", () => {
+  it("parses one field without needing the rest of the day", () => {
+    // Seven in the morning: a weight and nothing else.
+    expect(parseEntryField("weight", "231.2")).toEqual({ ok: true, value: 231.2 });
+  });
+
+  it("reads an empty string as clearing the measurement", () => {
+    expect(parseEntryField("weight", "")).toEqual({ ok: true, value: null });
+    expect(parseEntryField("consumedCals", "")).toEqual({ ok: true, value: null });
+  });
+
+  it("accepts a genuine zero, which is not the same as blank", () => {
+    // A rest day really can be zero active calories.
+    expect(parseEntryField("activeCals", "0")).toEqual({ ok: true, value: 0 });
+  });
+
+  it("returns a readable message rather than throwing", () => {
+    const result = parseEntryField("weight", "2320");
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/too high/i);
+  });
+
+  it("rejects text", () => {
+    expect(parseEntryField("systolic", "high").ok).toBe(false);
+  });
+
+  it("handles every field the Log screen offers", () => {
+    const samples: Record<string, string> = {
+      weight: "225",
+      bodyFat: "28.5",
+      vo2Max: "36",
+      systolic: "128",
+      diastolic: "82",
+      consumedCals: "1800",
+      activeCals: "1300",
+    };
+
+    for (const field of ENTRY_FIELDS) {
+      const result = parseEntryField(field, samples[field]);
+      expect(result.ok, `${field} should parse`).toBe(true);
+    }
+  });
+});
+
+describe("isEntryFieldName", () => {
+  it("accepts the real field names", () => {
+    for (const field of ENTRY_FIELDS) {
+      expect(isEntryFieldName(field)).toBe(true);
+    }
+  });
+
+  it("rejects anything else, including attempts at other columns", () => {
+    for (const bad of ["planId", "id", "note", "", "__proto__", 42, null]) {
+      expect(isEntryFieldName(bad)).toBe(false);
+    }
   });
 });
 

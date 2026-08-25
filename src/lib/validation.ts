@@ -106,15 +106,93 @@ export function fractionToPercent(fraction: number | null): number | null {
   return fraction === null ? null : fraction * 100;
 }
 
+/** The measurements a day can hold, in the order they appear on the Log screen. */
+export const ENTRY_FIELDS = [
+  "weight",
+  "bodyFat",
+  "vo2Max",
+  "systolic",
+  "diastolic",
+  "consumedCals",
+  "activeCals",
+] as const;
+
+export type EntryFieldName = (typeof ENTRY_FIELDS)[number];
+
+export function isEntryFieldName(value: unknown): value is EntryFieldName {
+  return (
+    typeof value === "string" && (ENTRY_FIELDS as readonly string[]).includes(value)
+  );
+}
+
 export const entryFieldsSchema = z.object({
-  weight: optionalNumber(z.number().min(50).max(1000)),
-  bodyFat: optionalNumber(z.number().min(1).max(75)),
-  vo2Max: optionalNumber(z.number().min(5).max(100)),
-  systolic: optionalNumber(z.number().int().min(50).max(300)),
-  diastolic: optionalNumber(z.number().int().min(30).max(200)),
-  consumedCals: optionalNumber(z.number().int().min(0).max(30000)),
-  activeCals: optionalNumber(z.number().int().min(0).max(30000)),
+  weight: optionalNumber(
+    z
+      .number()
+      .min(50, "That weight looks too low — check the number.")
+      .max(1000, "That weight looks too high — check the number."),
+  ),
+  bodyFat: optionalNumber(
+    z
+      .number()
+      .min(1, "Body fat looks too low — check the number.")
+      .max(75, "Body fat looks too high — check the number."),
+  ),
+  vo2Max: optionalNumber(
+    z
+      .number()
+      .min(5, "VO2 max looks too low — check the number.")
+      .max(100, "VO2 max looks too high — check the number."),
+  ),
+  systolic: optionalNumber(
+    z
+      .number()
+      .int("Enter systolic as a whole number.")
+      .min(50, "Systolic looks too low — check the number.")
+      .max(300, "Systolic looks too high — check the number."),
+  ),
+  diastolic: optionalNumber(
+    z
+      .number()
+      .int("Enter diastolic as a whole number.")
+      .min(30, "Diastolic looks too low — check the number.")
+      .max(200, "Diastolic looks too high — check the number."),
+  ),
+  consumedCals: optionalNumber(
+    z
+      .number()
+      .int("Enter calories as a whole number.")
+      .min(0, "Calories can't be negative.")
+      .max(30000, "That calorie count looks too high — check the number."),
+  ),
+  activeCals: optionalNumber(
+    z
+      .number()
+      .int("Enter calories as a whole number.")
+      .min(0, "Calories can't be negative.")
+      .max(30000, "That calorie count looks too high — check the number."),
+  ),
 });
+
+/**
+ * Validates one field on its own.
+ *
+ * The Log screen saves field by field as you fill them in, so it needs to check
+ * a single value without a complete day to hand — you might only have a weight
+ * at seven in the morning.
+ */
+export function parseEntryField(
+  field: EntryFieldName,
+  raw: string,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  const result = entryFieldsSchema.shape[field].safeParse(raw);
+
+  if (!result.success) {
+    return { ok: false, error: result.error.issues[0]?.message ?? "That doesn't look right." };
+  }
+
+  return { ok: true, value: result.data as number | null };
+}
 
 /**
  * Collapses a Zod error into one message per field, which is all a form row has
