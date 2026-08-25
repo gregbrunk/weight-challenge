@@ -723,3 +723,196 @@ body {
   text-transform: uppercase;
   color: var(--color-primary);
 }
+
+/* ---------------------------------------------------------------------------
+   Progress photos
+   --------------------------------------------------------------------------- */
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+@media (min-width: 640px) {
+  .photo-grid {
+    gap: var(--space-md);
+  }
+}
+
+.photo-slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.photo-frame {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-placeholder {
+  font-size: var(--text-h2);
+  font-weight: var(--weight-light);
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-caps);
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: var(--space-xs);
+}
+
+.photo-label {
+  text-align: center;
+}
+
+.photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+/* The file input is visually hidden, so its <label> is the control. It has to
+   look and behave like the button it replaces, including the focus ring the
+   hidden input receives. */
+.photo-choose {
+  width: 100%;
+  cursor: pointer;
+}
+
+.field-input:focus-visible + * .photo-choose,
+input[type="file"]:focus-visible + .photo-actions .photo-choose {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.photo-choose[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   Photo timeline (Progress screen)
+   --------------------------------------------------------------------------- */
+
+.photo-timeline {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  scroll-snap-type: x mandatory;
+  /* Keyboard users scroll this with arrow keys; see tabIndex on the container. */
+}
+
+.photo-timeline-day {
+  flex: 0 0 auto;
+  width: min(280px, 78vw);
+  scroll-snap-align: start;
+}
+
+.photo-timeline-images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2xs);
+}
+
+.photo-timeline-frame {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+}
+
+.photo-timeline-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+   Photo viewer (native <dialog>, so focus trap and Escape come for free)
+   --------------------------------------------------------------------------- */
+
+.photo-viewer {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  padding: 0;
+  max-width: min(560px, calc(100vw - var(--space-xl)));
+  max-height: calc(100dvh - var(--space-xl));
+  box-shadow: var(--shadow-lg);
+}
+
+.photo-viewer::backdrop {
+  background: rgb(17 24 39 / 0.7);
+}
+
+.photo-viewer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.photo-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.photo-viewer-image {
+  width: 100%;
+  height: auto;
+  max-height: 65dvh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.photo-viewer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+@media (max-width: 639px) {
+  .photo-viewer {
+    /* Full-bleed sheet on a phone, rounded only at the top. */
+    max-width: 100vw;
+    width: 100vw;
+    margin: auto auto 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding-bottom: var(--safe-bottom);
+  }
+}

@@ -44,3 +44,6 @@ next-env.d.ts
 
 # Prisma generated client — recreated by \`npm run build\`
 /src/generated
+
+# Progress photos written by the local development storage driver.
+/.photos

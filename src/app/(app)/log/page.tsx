@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AutosaveField } from "@/components/autosave-field";
 import { DateNav } from "@/components/date-nav";
+import { PhotoSlot } from "@/components/photo-slot";
+import { getPhotosForDate, PHOTO_SLOTS, SLOT_LABELS } from "@/lib/photos";
 import { planTargets } from "@/lib/calc";
 import { daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
 import { formatCalories, numberToInputValue } from "@/lib/format";
@@ -27,7 +29,10 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
     planInput.startDate,
     targets.endDate,
   );
-  const entry = await getEntry(plan.id, date);
+  const [entry, photos] = await Promise.all([
+    getEntry(plan.id, date),
+    getPhotosForDate(plan.id, date),
+  ]);
 
   const value = (raw: number | null | undefined) => numberToInputValue(raw ?? null);
 
@@ -123,6 +128,31 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
             help={`Your floor is ${formatCalories(targets.targetActiveCals)}.`}
           />
         </Group>
+
+        <section className="card" aria-labelledby="photos-heading">
+          <p id="photos-heading" className="log-group-time">
+            Progress photos
+          </p>
+          <p
+            className="text-muted"
+            style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+          >
+            Optional, any day you feel like it. Photos are resized on your phone
+            before they upload, so the originals stay on your device.
+          </p>
+
+          <div className="photo-grid">
+            {PHOTO_SLOTS.map((slot) => (
+              <PhotoSlot
+                key={slot}
+                date={date}
+                slot={slot}
+                label={SLOT_LABELS[slot]}
+                photoId={photos.find((photo) => photo.slot === slot)?.id ?? null}
+              />
+            ))}
+          </div>
+        </section>
       </div>
     </>
   );

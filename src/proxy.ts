@@ -49,6 +49,13 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!payload) {
+    // An API request can't do anything useful with a redirect to an HTML login
+    // page — an <img> would just render the page as a broken image, and a
+    // fetch would parse markup as data. Refuse outright instead.
+    if (pathname.startsWith("/api/")) {
+      return new NextResponse(null, { status: 404 });
+    }
+
     const url = new URL("/unlock", request.url);
     // Only ever return to a path on this site, never an absolute URL supplied
     // by someone else.
