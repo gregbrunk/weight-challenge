@@ -6,6 +6,11 @@
  * rather than crashing a page, and a file without its row is simply orphaned.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import type { Photo, PhotoSlot } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { fromDbDate, toDbDate } from "@/lib/plans";

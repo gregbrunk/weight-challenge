@@ -7,6 +7,11 @@
  * Blob account or token.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, normalize, resolve, sep } from "node:path";
 import type { PhotoStorage, StoredPhoto } from "./storage";

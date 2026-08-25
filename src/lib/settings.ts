@@ -3,6 +3,11 @@
  * epoch. Server-side only.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import { prisma } from "./db";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { isValidTimeZone } from "./timezone";

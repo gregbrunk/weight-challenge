@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useId, useRef } from "react";
+import { useActionState, useId } from "react";
 import { useFormStatus } from "react-dom";
 import { changePasswordAction } from "@/actions/settings";
 import { initialSettingsState } from "@/actions/settings-state";
-import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 
 /**
  * Changes the app password.
@@ -15,19 +15,19 @@ import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
  */
 export function PasswordChange() {
   const [state, formAction] = useActionState(changePasswordAction, initialSettingsState);
-  const formRef = useRef<HTMLFormElement>(null);
   const id = useId();
 
+  // Remounting on success clears the three password fields without an effect
+  // and without controlled inputs — React discards the old DOM nodes and their
+  // values with them. On failure the key is unchanged, so what was typed
+  // survives for correction.
+  const formKey = state.status === "saved" ? "saved" : "editing";
+
   return (
-    <form
-      ref={formRef}
-      action={async (formData) => {
-        await formAction(formData);
-        // Never leave a password sitting in the DOM after a successful change.
-        formRef.current?.reset();
-      }}
-      className="flex flex-col gap-4"
-    >
+    // formAction is passed straight through: wrapping it in another async
+    // function detaches it from useActionState, and the returned state then
+    // never updates — the form silently succeeds or fails with no message.
+    <form key={formKey} action={formAction} className="flex flex-col gap-4">
       <div className="field">
         <label className="field-label" htmlFor={`${id}-current`}>
           Current password

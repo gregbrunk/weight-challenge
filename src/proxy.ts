@@ -84,6 +84,8 @@ export const config = {
     /*
      * Everything except:
      *   _next/static, _next/image   — build output
+     *   favicon.ico                 — still requested by browsers regardless
+     *                                 of what the link tags say
      *   icon*.png, apple-icon*.png  — favicon and home-screen icons
      *   manifest.webmanifest        — installability
      *
@@ -94,6 +96,6 @@ export const config = {
      *
      * Nothing here reveals anything — they are static images and a name.
      */
-    "/((?!_next/static|_next/image|(?:apple-)?icon[^/]*\\.png|manifest\\.webmanifest).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|(?:apple-)?icon[^/]*\\.png|manifest\\.webmanifest).*)",
   ],
 };

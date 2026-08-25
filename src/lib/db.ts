@@ -10,6 +10,11 @@
  * reload; in production the module is instantiated once per function instance.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma";
 

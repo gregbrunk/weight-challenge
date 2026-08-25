@@ -4,6 +4,11 @@
  * pulling the database layer into the browser bundle.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import type { PlainDate } from "./date";
 import { getSettings } from "./settings";
 import { DEFAULT_TIME_ZONE, isValidTimeZone, todayInZone } from "./timezone";

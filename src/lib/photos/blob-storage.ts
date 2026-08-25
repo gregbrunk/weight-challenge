@@ -11,6 +11,11 @@
  * the app's password governs access and the storage location is never exposed.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import { del, get, put } from "@vercel/blob";
 import type { PhotoStorage, StoredPhoto } from "./storage";
 

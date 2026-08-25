@@ -7,6 +7,11 @@
  * handling from leaking into screens.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import type { DailyEntry, Plan } from "@/generated/prisma/client";
 import { prisma } from "./db";
 import type { EntryInput, PlanInput } from "./calc";

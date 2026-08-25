@@ -16,6 +16,11 @@ import {
   type ScryptOptions,
 } from "node:crypto";
 import { promisify } from "node:util";
+import "server-only";
+
+// Re-exported so server code has one import. Client components must import
+// from "./password-rules" directly — this module reaches node:crypto.
+export { MIN_PASSWORD_LENGTH, describePasswordProblem } from "./password-rules";
 
 // promisify() collapses to the 3-argument overload and drops the options
 // parameter, so the signature is restated here.
@@ -31,8 +36,6 @@ const COST = { N: 2 ** 16, r: 8, p: 1, maxmem: 128 * 2 ** 16 * 8 * 2 };
 const KEY_BYTES = 64;
 const SALT_BYTES = 16;
 const FORMAT = "scrypt";
-
-export const MIN_PASSWORD_LENGTH = 8;
 
 /** Produces `scrypt:N:r:p:salt:key`, all parameters recoverable for verification. */
 export async function hashPassword(password: string): Promise<string> {
@@ -91,11 +94,4 @@ export async function verifyPassword(
   }
 
   return actual.length === expected.length && timingSafeEqual(actual, expected);
-}
-
-export function describePasswordProblem(password: string): string | null {
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
-  }
-  return null;
 }

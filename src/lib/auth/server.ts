@@ -14,6 +14,11 @@
  * directly.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionEpoch } from "@/lib/settings";

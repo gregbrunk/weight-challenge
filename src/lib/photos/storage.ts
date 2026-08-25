@@ -12,6 +12,11 @@
  * route in /api/photos rather than by a storage URL.
  */
 
+// Importing this from a client component is a build error, not a runtime
+// one — which is the point. Three separate bugs in this project were a
+// client component pulling a server module in through a shared constant.
+import "server-only";
+
 import { randomBytes } from "node:crypto";
 import type { PhotoSlot } from "@/generated/prisma/client";
 import type { PlainDate } from "@/lib/date";
