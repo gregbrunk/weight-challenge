@@ -1,26 +1,572 @@
 @import "tailwindcss";
+@import "./tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tailwind's utilities are used for layout and rhythm only. Every color,
+   radius, shadow and type step comes from the design tokens, either through
+   the component classes below or through an explicit var() reference. */
+
+@theme {
+  /* Tailwind's default 4px spacing scale already matches the token rhythm,
+     so only the breakpoints need restating to match the design system. */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  /* Prevents iOS from resizing text when the phone rotates. */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body-md);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  /* Stops the whole page rubber-banding on iOS while inner areas scroll. */
+  overscroll-behavior-y: none;
+}
+
+:where(h1, h2, h3, h4) {
+  font-family: var(--font-display);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Removes the grey flash when tapping controls on iOS without removing any
+   actual affordance — :active states below carry that job. */
+:where(a, button, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Type helpers
+   --------------------------------------------------------------------------- */
+
+.label-caps {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-caps);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--color-text-muted);
+}
+
+/* Every number in this app sits in a column or changes in place, so figures
+   must not jitter as digits change. */
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Skip link — first focusable element on the page.
+   --------------------------------------------------------------------------- */
+
+.skip-link {
+  position: absolute;
+  left: var(--space-md);
+  top: calc(var(--safe-top) + var(--space-md));
+  z-index: 100;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--accent-fill);
+  color: var(--color-on-accent);
+  font-weight: var(--weight-medium);
+  transform: translateY(-200%);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* ---------------------------------------------------------------------------
+   Button
+   --------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 44px;
+  padding: 12px var(--space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.btn-sm {
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-body-sm);
+}
+
+.btn-lg {
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--text-body-lg);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-fill);
+  color: var(--color-on-accent);
+}
+.btn-primary:not(:disabled):hover {
+  filter: brightness(0.92);
+}
+.btn-primary:not(:disabled):active {
+  filter: brightness(0.86);
+  transform: translateY(1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.btn-secondary:not(:disabled):hover {
+  background: var(--color-surface-sunken);
+}
+.btn-secondary:not(:disabled):active {
+  border-color: var(--color-primary);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+}
+.btn-ghost:not(:disabled):hover {
+  background: var(--color-surface-sunken);
+}
+.btn-ghost:not(:disabled):active {
+  background: var(--color-divider);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+.btn-danger:not(:disabled):hover {
+  filter: brightness(0.92);
+}
+.btn-danger:not(:disabled):active {
+  filter: brightness(0.86);
+  transform: translateY(1px);
+}
+
+/* Icon-only buttons still need the full 44px target. */
+.btn-icon {
+  min-width: 44px;
+  padding: var(--space-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   Form fields
+   --------------------------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.field-label {
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  margin-bottom: var(--space-2xs);
+}
+
+.field-input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  /* 16px minimum: anything smaller makes iOS Safari zoom on focus. */
+  font-size: var(--text-body-md);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.field-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.field-input:hover:not(:disabled) {
+  border-color: var(--gray-300);
+}
+
+.field-input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.field-input:disabled {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+/* Numeric entry is the app's main interaction, so those fields get the mono
+   treatment and extra weight to stay legible at arm's length. */
+.field-input.numeric {
+  font-weight: var(--weight-medium);
+}
+
+.field-help {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+.field-error {
+  font-size: var(--text-body-sm);
+  color: var(--color-danger);
+}
+
+.field-suffix {
+  position: absolute;
+  right: var(--space-md);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-body-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   Card / bento tile
+   --------------------------------------------------------------------------- */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: var(--space-lg);
+  }
+}
+
+.card-raised {
+  background: var(--color-surface-raised);
+}
+
+/* ---------------------------------------------------------------------------
+   Badge
+   --------------------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-caps);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.badge-success {
+  background: var(--tint-success);
+  color: var(--color-success);
+}
+.badge-warning {
+  background: var(--tint-warning);
+  color: var(--color-warning);
+}
+.badge-danger {
+  background: var(--tint-danger);
+  color: var(--color-danger);
+}
+.badge-neutral {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Inline alert
+   --------------------------------------------------------------------------- */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-sm);
+}
+
+.alert-danger {
+  border-color: var(--color-danger);
+  background: var(--tint-danger);
+  color: var(--color-text);
+}
+
+.alert-success {
+  border-color: var(--color-success);
+  background: var(--tint-success);
+  color: var(--color-text);
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Page shell
+   --------------------------------------------------------------------------- */
+
+.page {
+  width: 100%;
+  max-width: var(--max-content);
+  margin-inline: auto;
+  padding-inline: max(var(--gutter), var(--safe-left));
+}
+
+/* Visually hidden but available to assistive tech. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   App shell and navigation
+
+   Mobile: fixed bottom tab bar, above the home indicator.
+   Desktop (>=1024px): fixed left rail, and the content area is inset to clear
+   it. One component, two layouts, no duplicated markup.
+   --------------------------------------------------------------------------- */
+
+.app-shell {
+  min-height: 100dvh;
+  /* Clears the fixed tab bar so the last card is never trapped underneath. */
+  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-lg));
+}
+
+.app-main {
+  padding-top: calc(var(--safe-top) + var(--space-lg));
+  padding-bottom: var(--space-2xl);
+}
+
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.app-nav-list {
+  display: flex;
+  align-items: stretch;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-nav-item {
+  flex: 1 1 0;
+}
+
+.app-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  /* 44px minimum target, met by the height rather than by padding alone. */
+  min-height: var(--tabbar-height);
+  padding: var(--space-2xs) var(--space-2xs);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.app-nav-link:hover {
+  color: var(--color-text);
+}
+
+/* Active state carries both color and a solid indicator bar, so it never
+   depends on color alone. */
+.app-nav-link[data-active] {
+  color: var(--color-primary);
+  position: relative;
+}
+
+.app-nav-link[data-active]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.app-nav-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.app-nav-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.app-nav-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    padding-bottom: 0;
+    padding-left: 96px;
+  }
+
+  .app-nav {
+    top: 0;
+    right: auto;
+    width: 96px;
+    border-top: 0;
+    border-right: 1px solid var(--color-border);
+    padding-top: calc(var(--safe-top) + var(--space-lg));
+  }
+
+  .app-nav-list {
+    flex-direction: column;
+    gap: var(--space-2xs);
+    padding: var(--space-sm);
+  }
+
+  .app-nav-item {
+    flex: 0 0 auto;
+  }
+
+  .app-nav-link {
+    min-height: 64px;
+    border-radius: var(--radius-md);
+    gap: var(--space-2xs);
+  }
+
+  .app-nav-link[data-active] {
+    background: var(--tint-primary);
+  }
+
+  .app-nav-link[data-active]::before {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 24px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Page header
+   --------------------------------------------------------------------------- */
+
+.page-title {
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 767px) {
+  .page-title {
+    font-size: var(--text-h3);
+  }
+}
+
+.page-subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-sm);
+  margin-top: var(--space-2xs);
+}
+
+/* Five tabs have to fit inside 375px, so the label tightens on the narrowest
+   phones rather than wrapping or clipping. */
+@media (max-width: 400px) {
+  .app-nav-label {
+    font-size: 0.625rem;
+    letter-spacing: 0.02em;
+  }
 }

@@ -1,0 +1,213 @@
+/* Contemporary design system — canonical tokens.
+   Reference the custom properties; never inline raw values.
+   Fonts: Jost (body + display), Overpass Mono (labels, code, data).
+
+   The blocks below are the design system as shipped. App-specific additions
+   live in the clearly marked section at the bottom. */
+
+:root {
+  /* ---- Brand color (from design source) ---- */
+  --color-primary: #c800df;
+  --color-secondary: #e60076;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* ---- Neutral ramp (derived from #111827) ---- */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* ---- Semantic surfaces (light) ---- */
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: var(--gray-50);
+  --color-text: #111827;
+  --color-text-muted: var(--gray-600);
+  --color-border: var(--gray-200);
+  --color-divider: var(--gray-100);
+  --color-on-accent: #ffffff;
+
+  /* ---- Type ---- */
+  --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-overpass-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --text-display: clamp(2.5rem, 6vw, 4rem);
+  --text-h1: clamp(2rem, 4.5vw, 3rem);
+  --text-h2: 2.25rem;
+  --text-h3: 1.5rem;
+  --text-h4: 1.25rem;
+  --text-body-lg: 1.125rem;
+  --text-body-md: 1rem;
+  --text-body-sm: 0.875rem;
+  --text-label-caps: 0.75rem;
+
+  --leading-tight: 1.08;
+  --leading-snug: 1.25;
+  --leading-normal: 1.6;
+
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-black: 800;
+
+  /* ---- Spacing (4px base, comfortable density) ---- */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ---- Elevation ---- */
+  --shadow-sm: 0 1px 2px rgb(17 24 39 / 0.06);
+  --shadow-md: 0 4px 12px rgb(17 24 39 / 0.08);
+  --shadow-lg: 0 12px 32px rgb(17 24 39 / 0.12);
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
+  /* ---- Layout ---- */
+  --max-content: 1280px;
+  --gutter: var(--space-md);
+  --focus-ring: 2px solid var(--color-primary);
+  --focus-offset: 2px;
+
+  /* Light mode: filled accent === brand accent, white text. */
+  --accent-fill: var(--color-primary);
+  --accent-fill-secondary: var(--color-secondary);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: var(--space-xl);
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --gutter: var(--space-2xl);
+  }
+}
+
+/* ---- Dark theme ----
+   Accents lift because the raw brand values fail contrast on a near-black
+   surface. Filled accent buttons keep the LIGHT accent as background with
+   dark text. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-primary: #e879f9;
+    --color-secondary: #f472b6;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
+
+    --color-surface: #0b0f19;
+    --color-surface-raised: #151b2b;
+    --color-surface-sunken: #070a11;
+    --color-text: #f9fafb;
+    --color-text-muted: #9ca3af;
+    --color-border: #2a3244;
+    --color-divider: #1c2233;
+    --color-on-accent: #0b0f19;
+
+    --accent-fill: #c800df;
+    --accent-fill-secondary: #e60076;
+
+    /* App additions, dark. See the light definitions below. */
+    --chart-weight: #e879f9;
+    --chart-bodyfat: #fbbf24;
+    --chart-vo2: #4ade80;
+    --chart-systolic: #f87171;
+    --chart-diastolic: #60a5fa;
+    --chart-goal: #6b7280;
+    --chart-grid: #1c2233;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-primary: #e879f9;
+  --color-secondary: #f472b6;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  --color-surface: #0b0f19;
+  --color-surface-raised: #151b2b;
+  --color-surface-sunken: #070a11;
+  --color-text: #f9fafb;
+  --color-text-muted: #9ca3af;
+  --color-border: #2a3244;
+  --color-divider: #1c2233;
+  --color-on-accent: #0b0f19;
+
+  --accent-fill: #c800df;
+  --accent-fill-secondary: #e60076;
+
+  --chart-weight: #e879f9;
+  --chart-bodyfat: #fbbf24;
+  --chart-vo2: #4ade80;
+  --chart-systolic: #f87171;
+  --chart-diastolic: #60a5fa;
+  --chart-goal: #6b7280;
+  --chart-grid: #1c2233;
+}
+
+/* =========================================================================
+   App additions
+   -------------------------------------------------------------------------
+   The design system ships no data-visualisation palette, and this app plots
+   five metrics that must stay distinguishable from each other and from the
+   brand accent. Light values here; the dark overrides sit inside the theme
+   blocks above so a single media query flips everything at once.
+
+   Each is checked at 3:1 or better against its own surface, which is the AA
+   floor for graphical objects.
+   ========================================================================= */
+:root {
+  --chart-weight: var(--color-primary);
+  --chart-bodyfat: #b45309;
+  --chart-vo2: #15803d;
+  --chart-systolic: #dc2626;
+  --chart-diastolic: #2563eb;
+  --chart-goal: var(--gray-400);
+  --chart-grid: var(--gray-200);
+
+  /* Status tints. 10% of the status color over the surface, per the badge
+     rules — declared once so every badge and alert tints identically. */
+  --tint-success: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
+  --tint-warning: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  --tint-danger: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  --tint-primary: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+
+  /* iOS safe areas. The bottom tab bar and any fixed footer must clear the
+     home indicator; these resolve to 0 everywhere else. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Height of the mobile tab bar, so scroll containers can pad past it. */
+  --tabbar-height: 56px;
+}

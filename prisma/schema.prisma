@@ -1,0 +1,138 @@
+// Weight Challenge App — data model.
+//
+// Single-user by design: there is no User table, just one password hash in
+// Setting. Everything else hangs off Plan, so archiving a plan cleanly parks
+// its entries and photos without mixing them into the next attempt.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PlanStatus {
+  active
+  archived
+}
+
+/// A weight-loss attempt: its configuration, its baseline measurements, and
+/// everything logged against it. Exactly one plan is `active` at a time; the
+/// application enforces that when activating, since archiving is a two-row swap.
+model Plan {
+  id     String     @id @default(cuid())
+  name   String
+  status PlanStatus @default(active)
+
+  /// Calendar day the plan begins, stored as a date with no time component.
+  startDate DateTime @db.Date
+  /// Length in days, inclusive of the start date.
+  days      Int
+
+  // --- The five inputs -----------------------------------------------------
+  /// Estimated resting metabolic rate, calories per day.
+  rmr              Int
+  /// The daily exercise burn the plan is built around.
+  targetActiveCals Int
+  /// Goal weight loss in pounds.
+  lbsToLose        Float
+  /// Calories per pound of fat. 3500 by convention.
+  calsPerLb        Int   @default(3500)
+
+  // --- Baseline measurements ----------------------------------------------
+  // All optional: you may not have a VO2 max or a blood pressure cuff on day
+  // one, and the app degrades to "—" rather than refusing to start.
+  startWeight     Float?
+  /// Fraction, not percent: 0.299 renders as 29.9%.
+  startBodyFat    Float?
+  startVo2Max     Float?
+  startSystolic   Int?
+  startDiastolic  Int?
+
+  entries DailyEntry[]
+  photos  Photo[]
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  @@index([status])
+}
+
+/// One calendar day's measurements. Every field is nullable and written
+/// independently — weight lands at 7am, calories at 10pm, and blood pressure
+/// whenever the cuff comes out. A row exists as soon as any single field is set.
+model DailyEntry {
+  id     String @id @default(cuid())
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  weight       Float?
+  /// Fraction, not percent.
+  bodyFat      Float?
+  vo2Max       Float?
+  systolic     Int?
+  diastolic    Int?
+  consumedCals Int?
+  activeCals   Int?
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, date])
+  @@index([planId, date])
+}
+
+enum PhotoSlot {
+  front
+  side
+  back
+}
+
+/// A progress photo. Three slots per day at most, each independently optional —
+/// uploading a new one to an occupied slot replaces it.
+model Photo {
+  id     String @id @default(cuid())
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  date DateTime  @db.Date
+  slot PhotoSlot
+
+  /// Path within the private blob store. Never served directly; always proxied
+  /// through an authenticated route so photos aren't readable by URL alone.
+  blobPath String
+  width    Int
+  height   Int
+  bytes    Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([planId, date, slot])
+  @@index([planId, date])
+}
+
+/// Application settings. A single row, id "singleton".
+model Setting {
+  id String @id @default("singleton")
+
+  /// scrypt hash of the app password, salt included. Null until first run,
+  /// which is what triggers the set-a-password flow.
+  passwordHash String?
+
+  /// Bumped to invalidate every outstanding session — used on password change.
+  sessionEpoch Int @default(1)
+
+  /// IANA timezone deciding what "today" means. An app-wide setting rather than
+  /// browser detection, so logging in from another timezone doesn't silently
+  /// file an entry under the wrong date.
+  timeZone String @default("America/Denver")
+
+  updatedAt DateTime @updatedAt
+}
