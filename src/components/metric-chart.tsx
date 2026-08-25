@@ -87,7 +87,10 @@ export function MetricChart({
 
       <div className="chart-frame">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
+          {/* No negative left margin: it reclaims a few pixels but clips the
+              y-axis labels, and a weight axis reading "33.5" instead of
+              "233.5" is worse than a slightly narrower plot. */}
+          <LineChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} className="chart-grid" />
 
             <XAxis
@@ -103,7 +106,8 @@ export function MetricChart({
               tickLine={false}
               axisLine={false}
               className="chart-axis"
-              width={48}
+              // Wide enough for a three-digit weight with one decimal.
+              width={52}
               tickFormatter={(value: number) => value.toFixed(decimals)}
             />
 
