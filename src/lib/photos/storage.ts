@@ -31,11 +31,11 @@ export interface PhotoStorage {
 /**
  * Where a photo lives.
  *
- * The random suffix does two jobs: it stops a replacement from being served
- * from a cache under its predecessor's URL, and it makes the path unguessable.
- * That second property matters because Vercel Blob URLs are reachable by
- * anyone holding them — the app never hands one out, but an unguessable path
- * means a leaked URL is the only way to reach the file.
+ * The random suffix stops a replacement from being served from a cache under
+ * its predecessor's URL, and keeps the path from being derivable from a plan id
+ * and a date. It is defence in depth rather than the protection itself:
+ * production blobs are stored with private access, so the path alone grants
+ * nothing without the store token.
  */
 export function photoPath(
   planId: string,

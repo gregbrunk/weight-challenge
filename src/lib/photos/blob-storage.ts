@@ -1,20 +1,24 @@
 /**
- * Production driver: Vercel Blob.
+ * Production driver: Vercel Blob, with private access.
  *
- * Blob objects are reachable by anyone holding their URL, so the app never
- * hands one out — photos are always proxied through the authenticated route in
- * /api/photos, and the stored paths carry 16 random bytes so a URL cannot be
- * guessed from a plan id and a date.
+ * Blobs are stored as `private`, which means they are not reachable by URL at
+ * all — reading one requires the store's token, which lives only on the server.
+ * That is a real improvement over a public blob at an unguessable path: there,
+ * a URL that leaked once (a screenshot, a log line, a shared link) would grant
+ * permanent access to a progress photo. Here it grants nothing.
+ *
+ * Photos are still served through the authenticated route in /api/photos, so
+ * the app's password governs access and the storage location is never exposed.
  */
 
-import { del, head, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 import type { PhotoStorage, StoredPhoto } from "./storage";
 
 export function createBlobStorage(): PhotoStorage {
   return {
     async put(path: string, data: Buffer, contentType: string): Promise<StoredPhoto> {
       const result = await put(path, data, {
-        access: "public",
+        access: "private",
         contentType,
         // The path already carries a nonce; a second one would make the stored
         // pathname disagree with what we record in the database.
@@ -26,15 +30,19 @@ export function createBlobStorage(): PhotoStorage {
 
     async get(path: string) {
       try {
-        const metadata = await head(path);
-        const response = await fetch(metadata.url);
-        if (!response.ok) return null;
+        const result = await get(path, { access: "private" });
+
+        // Null is "no such blob". A 304 can't happen here because we send no
+        // conditional header, but the union includes it, so it's handled
+        // rather than assumed away.
+        if (!result || result.statusCode !== 200 || !result.stream) return null;
 
         return {
-          data: Buffer.from(await response.arrayBuffer()),
-          contentType: metadata.contentType ?? "application/octet-stream",
+          data: Buffer.from(await new Response(result.stream).arrayBuffer()),
+          contentType: result.blob.contentType ?? "application/octet-stream",
         };
       } catch {
+        // A row can outlive its blob; a missing photo is not a server error.
         return null;
       }
     },
