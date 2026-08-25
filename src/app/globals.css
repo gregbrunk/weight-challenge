@@ -916,3 +916,255 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
     padding-bottom: var(--safe-bottom);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Charts
+
+   Recharts writes stroke and fill as SVG presentation attributes, which don't
+   resolve var(). A CSS rule outranks a presentation attribute, so colouring by
+   class here is what lets the design tokens reach the chart — and what makes
+   it re-colour on a theme change with no JavaScript involved.
+   --------------------------------------------------------------------------- */
+
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.chart-title {
+  font-size: var(--text-h4);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.chart-description {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-sm);
+  margin-top: 2px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+.chart-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+/* A reference line reads as a rule, not a series. */
+.chart-swatch-reference {
+  height: 2px;
+  border-radius: 0;
+  opacity: 0.7;
+}
+
+.chart-frame {
+  height: 200px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .chart-frame {
+    height: 260px;
+  }
+}
+
+/* --- series colours ------------------------------------------------------ */
+
+.series-weight {
+  color: var(--chart-weight);
+}
+.series-bodyfat {
+  color: var(--chart-bodyfat);
+}
+.series-vo2 {
+  color: var(--chart-vo2);
+}
+.series-systolic {
+  color: var(--chart-systolic);
+}
+.series-diastolic {
+  color: var(--chart-diastolic);
+}
+.series-goal {
+  color: var(--chart-goal);
+}
+
+/* Recharts puts a Line's className on the wrapping <g>, not on the <path> it
+   draws, so the stroke has to be reached through a descendant selector. The
+   swatches above use `background: currentColor` from the same classes. */
+.chart-line.series-weight .recharts-curve {
+  stroke: var(--chart-weight);
+}
+.chart-line.series-bodyfat .recharts-curve {
+  stroke: var(--chart-bodyfat);
+}
+.chart-line.series-vo2 .recharts-curve {
+  stroke: var(--chart-vo2);
+}
+.chart-line.series-systolic .recharts-curve {
+  stroke: var(--chart-systolic);
+}
+.chart-line.series-diastolic .recharts-curve {
+  stroke: var(--chart-diastolic);
+}
+.chart-line.series-goal .recharts-curve {
+  stroke: var(--chart-goal);
+}
+
+.chart-line-reference .recharts-curve {
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+/* The hover dot is rendered as its own shape and takes the class directly. */
+circle.chart-dot.series-weight {
+  fill: var(--chart-weight);
+}
+circle.chart-dot.series-bodyfat {
+  fill: var(--chart-bodyfat);
+}
+circle.chart-dot.series-vo2 {
+  fill: var(--chart-vo2);
+}
+circle.chart-dot.series-systolic {
+  fill: var(--chart-systolic);
+}
+circle.chart-dot.series-diastolic {
+  fill: var(--chart-diastolic);
+}
+circle.chart-dot {
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+/* --- frame, axes, cursor ------------------------------------------------- */
+
+.chart-grid line {
+  stroke: var(--chart-grid);
+}
+
+.chart-axis .recharts-cartesian-axis-tick text {
+  fill: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.chart-cursor {
+  stroke: var(--color-text-muted);
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+}
+
+/* Recharts renders the tooltip in a wrapper that carries its own outline. */
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+.chart-tooltip {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-sm) var(--space-md);
+  min-width: 150px;
+}
+
+.chart-tooltip-date {
+  margin-bottom: var(--space-2xs);
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+}
+
+.chart-tooltip-label {
+  color: var(--color-text-muted);
+  flex: 1;
+}
+
+.chart-tooltip-value {
+  font-weight: var(--weight-medium);
+}
+
+/* ---------------------------------------------------------------------------
+   Burndown and pace
+   --------------------------------------------------------------------------- */
+
+.burndown-bar {
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  margin: var(--space-sm) 0 var(--space-2xs);
+}
+
+.burndown-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent-fill);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+@media (min-width: 900px) {
+  .stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Current beside best, so drift from a personal best is visible at a glance. */
+.stat-pair {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin-top: var(--space-2xs);
+}
+
+.stat-current {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+}
+
+.stat-best {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+.stat-offbest {
+  font-size: var(--text-body-sm);
+  color: var(--color-warning);
+  margin-top: var(--space-2xs);
+}
