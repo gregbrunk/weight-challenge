@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:check": "node scripts/db-check.mjs",
-    "db:reset": "node scripts/db-reset.mjs"
+    "db:reset": "node scripts/db-reset.mjs",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

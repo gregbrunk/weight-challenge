@@ -83,10 +83,17 @@ export const config = {
   matcher: [
     /*
      * Everything except:
-     *   _next/static, _next/image  — build output
-     *   favicon.ico, icons, manifest — installable-app assets, requested before
-     *                                  a session exists
+     *   _next/static, _next/image   — build output
+     *   icon*.png, apple-icon*.png  — favicon and home-screen icons
+     *   manifest.webmanifest        — installability
+     *
+     * The icons and manifest are fetched before any session exists: a phone
+     * reads them while deciding whether the app is installable, and a browser
+     * asks for the favicon on the unlock screen itself. Gating them would show
+     * a broken tab icon and quietly break "Add to Home Screen".
+     *
+     * Nothing here reveals anything — they are static images and a name.
      */
-    "/((?!_next/static|_next/image|favicon.ico|icon-.*\\.png|apple-icon.*\\.png|manifest.webmanifest).*)",
+    "/((?!_next/static|_next/image|(?:apple-)?icon[^/]*\\.png|manifest\\.webmanifest).*)",
   ],
 };
