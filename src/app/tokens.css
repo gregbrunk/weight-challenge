@@ -1,17 +1,33 @@
-/* Contemporary design system — canonical tokens.
+/* Design tokens — Contemporary design system, sage accent.
    Reference the custom properties; never inline raw values.
    Fonts: Jost (body + display), Overpass Mono (labels, code, data).
 
-   The blocks below are the design system as shipped. App-specific additions
-   live in the clearly marked section at the bottom. */
+   The accent departs from the design system's fuchsia (#C800DF) and pink
+   (#E60076). This is an app opened twice a day, every day, for three months,
+   and a high-chroma magenta is tiring at that frequency. Everything structural
+   stays: the type pairing, the 4px spacing rhythm, the radius and elevation
+   scales, and WCAG 2.2 AA as the floor.
+
+   Every value below was measured rather than eyeballed. Ratios are noted where
+   they are close to a threshold or where a rule had to be broken. */
 
 :root {
-  /* ---- Brand color (from design source) ---- */
-  --color-primary: #c800df;
-  --color-secondary: #e60076;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
+  /* ---- Accent ----
+     A desaturated sage. Deep enough to carry text on white at 5.63:1, which
+     is what a lighter, more literal sage could not do. */
+  --color-primary: #4f6f52;
+  /* Deep pine, for the rare second accent. 6.08:1 on white. */
+  --color-secondary: #3d6b5c;
+
+  /* ---- Status ----
+     These are darker than the design system's defaults because the originals
+     failed as text: #16A34A measured 3.30:1 on white and #D97706 measured
+     3.19:1, both well under the 4.5 floor, and worse again on their own 10%
+     badge tints. The values here clear 4.5:1 against white *and* against their
+     tint, which is the check the badge rules actually require. */
+  --color-success: #0f7a3d; /* 5.42 on white, 4.73 on tint */
+  --color-warning: #92400e; /* 7.09 on white, 6.08 on tint */
+  --color-danger: #b91c1c; /* 6.47 on white, 5.45 on tint */
 
   /* ---- Neutral ramp (derived from #111827) ---- */
   --gray-50: #f9fafb;
@@ -34,6 +50,12 @@
   --color-border: var(--gray-200);
   --color-divider: var(--gray-100);
   --color-on-accent: #ffffff;
+
+  /* Filled controls. Light mode: accent background, white text (5.63:1). */
+  --accent-fill: var(--color-primary);
+  --accent-fill-secondary: var(--color-secondary);
+  --danger-fill: var(--color-danger);
+  --color-on-danger: #ffffff;
 
   /* ---- Type ---- */
   --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
@@ -94,10 +116,6 @@
   --gutter: var(--space-md);
   --focus-ring: 2px solid var(--color-primary);
   --focus-offset: 2px;
-
-  /* Light mode: filled accent === brand accent, white text. */
-  --accent-fill: var(--color-primary);
-  --accent-fill-secondary: var(--color-secondary);
 }
 
 @media (min-width: 768px) {
@@ -112,13 +130,19 @@
 }
 
 /* ---- Dark theme ----
-   Accents lift because the raw brand values fail contrast on a near-black
-   surface. Filled accent buttons keep the LIGHT accent as background with
-   dark text. */
+   The accent lifts to a pale sage, because the deep one reads as near-black
+   against a near-black surface.
+
+   The design system says a dark-mode filled button keeps the *light* accent as
+   its background with dark text. That rule does not survive measurement: the
+   light sage against #0B0F19 is 3.40:1, and the system's own fuchsia is 4.12:1
+   — both under the 4.5 floor for the label sitting on them. So filled buttons
+   here use the *lifted* accent as the background with dark text, which
+   measures 9.16:1. Accessibility wins over the house rule, deliberately. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-primary: #e879f9;
-    --color-secondary: #f472b6;
+    --color-primary: #9cbba2;
+    --color-secondary: #8fc3ae;
     --color-success: #4ade80;
     --color-warning: #fbbf24;
     --color-danger: #f87171;
@@ -132,23 +156,25 @@
     --color-divider: #1c2233;
     --color-on-accent: #0b0f19;
 
-    --accent-fill: #c800df;
-    --accent-fill-secondary: #e60076;
+    --accent-fill: #9cbba2;
+    --accent-fill-secondary: #8fc3ae;
+    /* White on #F87171 is 2.77:1 and fails; dark text on it is 6.92:1. */
+    --danger-fill: #f87171;
+    --color-on-danger: #0b0f19;
 
-    /* App additions, dark. See the light definitions below. */
-    --chart-weight: #e879f9;
+    --chart-weight: #9cbba2;
     --chart-bodyfat: #fbbf24;
-    --chart-vo2: #4ade80;
+    --chart-vo2: #c4b5fd;
     --chart-systolic: #f87171;
-    --chart-diastolic: #60a5fa;
+    --chart-diastolic: #93c5fd;
     --chart-goal: #6b7280;
     --chart-grid: #1c2233;
   }
 }
 
 :root[data-theme="dark"] {
-  --color-primary: #e879f9;
-  --color-secondary: #f472b6;
+  --color-primary: #9cbba2;
+  --color-secondary: #8fc3ae;
   --color-success: #4ade80;
   --color-warning: #fbbf24;
   --color-danger: #f87171;
@@ -162,14 +188,16 @@
   --color-divider: #1c2233;
   --color-on-accent: #0b0f19;
 
-  --accent-fill: #c800df;
-  --accent-fill-secondary: #e60076;
+  --accent-fill: #9cbba2;
+  --accent-fill-secondary: #8fc3ae;
+  --danger-fill: #f87171;
+  --color-on-danger: #0b0f19;
 
-  --chart-weight: #e879f9;
+  --chart-weight: #9cbba2;
   --chart-bodyfat: #fbbf24;
-  --chart-vo2: #4ade80;
+  --chart-vo2: #c4b5fd;
   --chart-systolic: #f87171;
-  --chart-diastolic: #60a5fa;
+  --chart-diastolic: #93c5fd;
   --chart-goal: #6b7280;
   --chart-grid: #1c2233;
 }
@@ -178,19 +206,17 @@
    App additions
    -------------------------------------------------------------------------
    The design system ships no data-visualisation palette, and this app plots
-   five metrics that must stay distinguishable from each other and from the
-   brand accent. Light values here; the dark overrides sit inside the theme
-   blocks above so a single media query flips everything at once.
-
-   Each is checked at 3:1 or better against its own surface, which is the AA
-   floor for graphical objects.
+   five metrics that must stay apart from each other and from the accent.
+   Each clears 3:1 against its own surface, the AA floor for graphical
+   objects. VO2 max is violet rather than green so it doesn't collide with the
+   sage accent on the weight series.
    ========================================================================= */
 :root {
   --chart-weight: var(--color-primary);
   --chart-bodyfat: #b45309;
-  --chart-vo2: #15803d;
+  --chart-vo2: #6d28d9;
   --chart-systolic: #dc2626;
-  --chart-diastolic: #2563eb;
+  --chart-diastolic: #1d4ed8;
   --chart-goal: var(--gray-400);
   --chart-grid: var(--gray-200);
 

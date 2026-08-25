@@ -191,8 +191,8 @@ body {
 }
 
 .btn-danger {
-  background: var(--color-danger);
-  color: #ffffff;
+  background: var(--danger-fill);
+  color: var(--color-on-danger);
 }
 .btn-danger:not(:disabled):hover {
   filter: brightness(0.92);
