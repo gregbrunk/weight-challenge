@@ -91,21 +91,41 @@ body {
    --------------------------------------------------------------------------- */
 
 .skip-link {
+  /* Hidden by clipping to a single pixel rather than by transforming it out of
+     view. The old version translated up by twice its own height, which only
+     cleared the screen when its `top` was small — on a phone with a Dynamic
+     Island, env(safe-area-inset-top) pushed it ~59px down and a third of the
+     pill stayed visible above the heading. Clipping has no such arithmetic to
+     get wrong at any inset. */
   position: absolute;
-  left: var(--space-md);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* :focus as well as :focus-visible — a skip link must appear for anyone who
+   reaches it, including browsers that don't treat it as a visible-focus case. */
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
   top: calc(var(--safe-top) + var(--space-md));
+  left: max(var(--space-md), var(--safe-left));
   z-index: 100;
+  width: auto;
+  height: auto;
+  margin: 0;
   padding: var(--space-sm) var(--space-md);
+  overflow: visible;
+  clip-path: none;
   border-radius: var(--radius-md);
   background: var(--accent-fill);
   color: var(--color-on-accent);
   font-weight: var(--weight-medium);
-  transform: translateY(-200%);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.skip-link:focus-visible {
-  transform: translateY(0);
 }
 
 /* ---------------------------------------------------------------------------
