@@ -97,7 +97,11 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
         and add the rest — nothing here needs finishing in one sitting.
       </p>
 
-      <div className="flex flex-col gap-4">
+      {/* Keyed by date on purpose. Every client component below seeds its
+          state from props — the field values, the photo slots, the task ticks.
+          Without this key React reuses those instances when you arrow to
+          another day, and yesterday's screen shows today's numbers. */}
+      <div key={date} className="flex flex-col gap-4">
         <Group title="Morning" hint="On the scale">
           <AutosaveField
             date={date}

@@ -49,6 +49,18 @@ describe("taskWindow", () => {
     expect(w.length).toBe(5);
   });
 
+  it("counts a tick on the plan's first day, even for a task set up later", () => {
+    // The regression: tasks were created with startDate = today, so setting
+    // them up on day 2 and ticking day 1 counted for nothing.
+    const task = { ...manualTask, startDate: plan.startDate };
+    const stats = computeTaskStats(task, plan, ticks("2026-08-05"), noEntries, "2026-08-06");
+
+    expect(stats.eligibleDays).toBe(2);
+    expect(stats.completedDays).toBe(1);
+    expect(stats.currentStreak).toBe(1);
+    expect(stats.pendingToday).toBe(true);
+  });
+
   it("starts at the task's own start date when it was added later", () => {
     const late = { ...manualTask, startDate: "2026-08-20" };
     const w = taskWindow(late, plan, "2026-08-25");

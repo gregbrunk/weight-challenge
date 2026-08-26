@@ -53,17 +53,34 @@ export function AutosaveField({
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
+
   // What the server currently holds, so an unchanged field never re-saves.
-  const savedValue = useRef(initialValue);
+  // State rather than a ref because the date guard below has to reset it during
+  // render, and mutating a ref there is unsafe under concurrent rendering.
+  const [savedValue, setSavedValue] = useState(initialValue);
+
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedFlash = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guards against an earlier, slower save landing after a later one.
   const saveSequence = useRef(0);
 
+  // Belt and braces alongside the date key on the Log screen: if this field is
+  // ever re-rendered for a different day without being remounted, adopt that
+  // day's value instead of showing the previous one. React's documented way to
+  // reset state from props — during render, no effect involved.
+  const [renderedFor, setRenderedFor] = useState(date);
+  if (renderedFor !== date) {
+    setRenderedFor(date);
+    setValue(initialValue);
+    setStatus("idle");
+    setError(null);
+    setSavedValue(initialValue);
+  }
+
   const save = useCallback(
     async (next: string) => {
       if (debounce.current) clearTimeout(debounce.current);
-      if (next.trim() === savedValue.current.trim()) return;
+      if (next.trim() === savedValue.trim()) return;
 
       const sequence = ++saveSequence.current;
       setStatus("saving");
@@ -74,7 +91,7 @@ export function AutosaveField({
       if (sequence !== saveSequence.current) return;
 
       if (result.ok) {
-        savedValue.current = next.trim();
+        setSavedValue(next.trim());
         setError(null);
         setStatus("saved");
 
@@ -88,7 +105,7 @@ export function AutosaveField({
         setStatus("error");
       }
     },
-    [date, field],
+    [date, field, savedValue],
   );
 
   const handleChange = (next: string) => {

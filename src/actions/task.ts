@@ -34,8 +34,12 @@ const MAX_NAME = 60;
 /**
  * Adds a task to the active plan.
  *
- * The task starts counting today, not at the plan's start — a habit added on
- * day 20 shouldn't arrive with nineteen recorded failures.
+ * The task counts from the plan's first day. An earlier version started it on
+ * the day it was created, reasoning that a habit added on day 20 shouldn't
+ * arrive with nineteen recorded failures — but that made the ordinary case
+ * wrong: set your tasks up on day 2, tick day 1, and the tick fell outside the
+ * task's window and counted for nothing. These are the plan's rules, so they
+ * run for the whole plan.
  */
 export async function createTaskAction(
   _previous: TaskFormState,
@@ -55,16 +59,13 @@ export async function createTaskAction(
   if (!plan) return { status: "error", message: "There's no active plan to add tasks to." };
 
   const planInput = toPlanInput(plan);
-  const today = await getToday();
 
-  // Clamp into the plan: a plan starting tomorrow shouldn't create a task that
-  // began yesterday, and one already finished shouldn't extend past its end.
-  const planEnd = planTargets(planInput).endDate;
-  let startDate: PlainDate = today;
-  if (compareDates(startDate, planInput.startDate) < 0) startDate = planInput.startDate;
-  if (compareDates(startDate, planEnd) > 0) startDate = planEnd;
-
-  await createTask({ planId: plan.id, name, autoRule, startDate });
+  await createTask({
+    planId: plan.id,
+    name,
+    autoRule,
+    startDate: planInput.startDate,
+  });
 
   revalidatePath("/", "layout");
   return { status: "saved", message: null };

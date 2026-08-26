@@ -251,4 +251,19 @@ describe("body fat conversion", () => {
     expect(percentToFraction(null)).toBeNull();
     expect(fractionToPercent(null)).toBeNull();
   });
+
+  it("returns a clean number, not floating-point noise", () => {
+    // 30.6 stores as 0.306, and 0.306 * 100 is 30.599999999999998 — which is
+    // what ended up in the Log screen's input box.
+    expect(fractionToPercent(0.306)).toBe(30.6);
+    expect(String(fractionToPercent(0.306))).toBe("30.6");
+  });
+
+  it("round-trips every tenth of a percent cleanly", () => {
+    for (let tenths = 10; tenths <= 750; tenths += 1) {
+      const percent = tenths / 10;
+      const back = fractionToPercent(percentToFraction(percent));
+      expect(String(back), `${percent}% round trip`).toBe(String(percent));
+    }
+  });
 });

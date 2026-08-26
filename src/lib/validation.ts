@@ -102,8 +102,16 @@ export function percentToFraction(percent: number | null): number | null {
   return percent === null ? null : percent / 100;
 }
 
+/**
+ * Rounds on the way back out.
+ *
+ * 30.6 stores as 0.306, and 0.306 * 100 is 30.599999999999998 in binary
+ * floating point — which is what the Log screen then puts in the input box.
+ * Two decimal places is far finer than any body-fat reading and leaves no
+ * room for the noise.
+ */
 export function fractionToPercent(fraction: number | null): number | null {
-  return fraction === null ? null : fraction * 100;
+  return fraction === null ? null : Math.round(fraction * 100 * 100) / 100;
 }
 
 /** The measurements a day can hold, in the order they appear on the Log screen. */
