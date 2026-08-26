@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { activatePlanAction, archiveCurrentPlanAction } from "@/actions/plan";
 import { getActivePlan, listArchivedPlans, toPlanInput } from "@/lib/plans";
+import { listTasks, toTaskInput } from "@/lib/tasks";
+import { TaskManager, type ManagedTask } from "@/components/task-manager";
 import { planTargets } from "@/lib/calc";
 import { formatLong } from "@/lib/date";
 import { formatCalories, formatDays, formatWeight } from "@/lib/format";
@@ -16,8 +18,20 @@ export default async function PlanPage() {
   const plan = await getActivePlan();
   if (!plan) redirect("/plan/new");
 
-  const archived = await listArchivedPlans();
-  const targets = planTargets(toPlanInput(plan));
+  const planInput = toPlanInput(plan);
+  const [archived, tasks] = await Promise.all([listArchivedPlans(), listTasks(plan.id)]);
+  const targets = planTargets(planInput);
+
+  const managedTasks: ManagedTask[] = tasks.map((task) => {
+    const input = toTaskInput(task);
+    return {
+      id: task.id,
+      name: task.name,
+      autoRule: input.autoRule,
+      startedLate: input.startDate !== planInput.startDate,
+      startDateLabel: formatLong(input.startDate),
+    };
+  });
 
   return (
     <>
@@ -99,6 +113,30 @@ export default async function PlanPage() {
           </div>
         </section>
       </div>
+
+      <section
+        className="card"
+        aria-labelledby="tasks-heading"
+        style={{ marginTop: "var(--space-md)" }}
+      >
+        <h2 id="tasks-heading" className="label-caps" style={{ marginBottom: "var(--space-xs)" }}>
+          Daily tasks
+        </h2>
+        <p
+          className="text-muted"
+          style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+        >
+          The handful of things you need to do each day to hit your numbers. They
+          appear on the Log screen with a streak count, and their records live on
+          Progress.
+        </p>
+
+        <TaskManager
+          tasks={managedTasks}
+          foodCeiling={`${formatCalories(targets.allowedFoodCals)} cal`}
+          exerciseFloor={`${formatCalories(targets.targetActiveCals)} cal`}
+        />
+      </section>
 
       <div
         className="flex flex-col gap-3 sm:flex-row"

@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { AutosaveField } from "@/components/autosave-field";
 import { DateNav } from "@/components/date-nav";
 import { PhotoSlot } from "@/components/photo-slot";
+import { TaskChecklist, type ChecklistTask } from "@/components/task-checklist";
 import { getPhotosForDate, PHOTO_SLOTS, SLOT_LABELS } from "@/lib/photos";
+import { getTaskContext, toTaskInput } from "@/lib/tasks";
+import { computeTaskStats, isAutoRuleSatisfied } from "@/lib/streaks";
 import { planTargets } from "@/lib/calc";
 import { daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
 import { formatCalories, numberToInputValue } from "@/lib/format";
@@ -29,10 +32,43 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
     planInput.startDate,
     targets.endDate,
   );
-  const [entry, photos] = await Promise.all([
+  const [entry, photos, taskContext] = await Promise.all([
     getEntry(plan.id, date),
     getPhotosForDate(plan.id, date),
+    getTaskContext(plan.id),
   ]);
+
+  // Whether each task is done is asked of the day being viewed; the streak is
+  // a present-tense fact and is always measured against the real today.
+  const checklist: ChecklistTask[] = taskContext.tasks.map((task) => {
+    const input = toTaskInput(task);
+    const completions = taskContext.completionsByTask.get(task.id) ?? new Set<string>();
+    const stats = computeTaskStats(
+      input,
+      planInput,
+      completions,
+      taskContext.entriesByDate,
+      today,
+    );
+
+    const done =
+      input.autoRule === "manual"
+        ? completions.has(date)
+        : isAutoRuleSatisfied(
+            input.autoRule,
+            taskContext.entriesByDate.get(date),
+            planInput,
+          );
+
+    return {
+      id: task.id,
+      name: task.name,
+      autoRule: input.autoRule,
+      done,
+      currentStreak: stats.currentStreak,
+      pendingToday: stats.pendingToday,
+    };
+  });
 
   const value = (raw: number | null | undefined) => numberToInputValue(raw ?? null);
 
@@ -128,6 +164,23 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
             help={`Your floor is ${formatCalories(targets.targetActiveCals)}.`}
           />
         </Group>
+
+        {checklist.length > 0 && (
+          <section className="card" aria-labelledby="tasks-heading">
+            <p id="tasks-heading" className="log-group-time">
+              Daily tasks
+            </p>
+            <p
+              className="text-muted"
+              style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+            >
+              Tick each one off as you do it. The number beside it is how many days
+              in a row you&apos;ve managed it.
+            </p>
+
+            <TaskChecklist date={date} tasks={checklist} isFuture={date > today} />
+          </section>
+        )}
 
         <section className="card" aria-labelledby="photos-heading">
           <p id="photos-heading" className="log-group-time">

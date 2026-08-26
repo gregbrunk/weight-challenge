@@ -1188,3 +1188,298 @@ circle.chart-dot {
   color: var(--color-warning);
   margin-top: var(--space-2xs);
 }
+
+/* ---------------------------------------------------------------------------
+   Daily tasks and streaks
+   --------------------------------------------------------------------------- */
+
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* The whole row is the tap target, not just the box — this gets used with one
+   thumb, half asleep, at six in the morning. */
+.task-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+label.task-control:hover {
+  background: var(--color-surface-sunken);
+}
+
+.task-control[data-done] {
+  border-color: var(--color-success);
+  background: var(--tint-success);
+}
+
+/* Auto-linked rows aren't interactive, so they shouldn't invite a tap. */
+span.task-control {
+  cursor: default;
+}
+
+/* The hidden checkbox still owns focus, so the ring has to be drawn here. */
+.task-control:has(input:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.task-box {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-bold);
+  color: transparent;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.task-box[data-done] {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #ffffff;
+}
+
+.task-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-name {
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+}
+
+.task-note {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-snug);
+}
+
+.task-streak {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 48px;
+  justify-content: flex-end;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* A streak that's alive but not yet earned today reads quieter than one
+   already banked. */
+.task-streak[data-pending] {
+  opacity: 0.65;
+}
+
+.task-streak-none {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-regular);
+}
+
+/* --- managing tasks on the Plan screen ----------------------------------- */
+
+.task-manage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-manage-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.task-manage-row:first-child {
+  padding-top: 0;
+}
+
+.task-manage-body {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.task-manage-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+}
+
+/* --- streak cards on the Progress screen --------------------------------- */
+
+.streak-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.streak-name {
+  font-size: var(--text-h4);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.streak-figures {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.streak-current {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+}
+
+.streak-current[data-pending] {
+  opacity: 0.65;
+}
+
+.streak-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.streak-stat-value {
+  font-size: var(--text-h4);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+  margin-top: var(--space-2xs);
+}
+
+/* --- calendar ------------------------------------------------------------ */
+
+.streak-calendars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+}
+
+.calendar-title {
+  margin-bottom: var(--space-xs);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  max-width: 320px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--color-text-muted);
+  padding-bottom: 2px;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  /* Days outside the plan are drawn but muted to near-nothing, so the grid
+     keeps its shape without implying the plan covered them. */
+  color: transparent;
+  background: transparent;
+}
+
+.calendar-cell[data-in-window] {
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+}
+
+.calendar-cell[data-done] {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #ffffff;
+  font-weight: var(--weight-bold);
+}
+
+/* A day still to come is neither done nor missed. */
+.calendar-cell[data-future] {
+  background: transparent;
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+.calendar-cell[data-today] {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.calendar-key {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+.calendar-key .calendar-cell {
+  width: 14px;
+  height: 14px;
+  aspect-ratio: auto;
+  flex: 0 0 auto;
+  margin-left: var(--space-sm);
+}
+
+.calendar-key .calendar-cell:first-child {
+  margin-left: 0;
+}

@@ -3,6 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MetricChart } from "@/components/metric-chart";
 import { PhotoTimeline, type TimelineDay } from "@/components/photo-timeline";
+import { StreakCard, type StreakCardTask } from "@/components/streak-card";
+import { getTaskContext, toTaskInput } from "@/lib/tasks";
+import { AUTO_RULE_LABELS, computeTaskStats, taskCalendar } from "@/lib/streaks";
 import { planProgress, type MetricProgress } from "@/lib/calc";
 import { buildChartRows, hasData } from "@/lib/chart-data";
 import { daysBetween, formatLong } from "@/lib/date";
@@ -30,10 +33,37 @@ export default async function ProgressPage() {
   const planInput = toPlanInput(plan);
   const today = await getToday();
 
-  const [entries, photos] = await Promise.all([
+  const [entries, photos, taskContext] = await Promise.all([
     getEntryInputs(plan.id),
     getPhotosForPlan(plan.id),
+    getTaskContext(plan.id),
   ]);
+
+  const streakTasks: StreakCardTask[] = taskContext.tasks.map((task) => {
+    const input = toTaskInput(task);
+    const completions = taskContext.completionsByTask.get(task.id) ?? new Set<string>();
+
+    return {
+      id: task.id,
+      name: task.name,
+      autoNote:
+        input.autoRule === "manual" ? null : AUTO_RULE_LABELS[input.autoRule],
+      stats: computeTaskStats(
+        input,
+        planInput,
+        completions,
+        taskContext.entriesByDate,
+        today,
+      ),
+      calendar: taskCalendar(
+        input,
+        planInput,
+        completions,
+        taskContext.entriesByDate,
+        today,
+      ),
+    };
+  });
 
   const progress = planProgress(planInput, entries, today);
   const rows = buildChartRows(planInput, entries, today);
@@ -180,6 +210,31 @@ export default async function ProgressPage() {
               format={(value) => formatSigned(value, 0)}
             />
           </div>
+        </section>
+
+        {/* ---- Streaks ---- */}
+        <section aria-labelledby="streaks-heading">
+          <h2 id="streaks-heading" className="label-caps" style={{ marginBottom: "var(--space-md)" }}>
+            Daily tasks
+          </h2>
+
+          {streakTasks.length === 0 ? (
+            <div className="card">
+              <p className="text-muted" style={{ marginBottom: "var(--space-md)" }}>
+                No daily tasks yet. Set up the things you need to do each day and
+                their streaks and records will collect here.
+              </p>
+              <Link href="/plan" className="btn btn-secondary btn-sm">
+                Set up tasks
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col" style={{ gap: "var(--space-md)" }}>
+              {streakTasks.map((task) => (
+                <StreakCard key={task.id} task={task} />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ---- Charts ---- */}

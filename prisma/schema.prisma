@@ -53,6 +53,7 @@ model Plan {
 
   entries DailyEntry[]
   photos  Photo[]
+  tasks   Task[]
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -135,4 +136,61 @@ model Setting {
   timeZone String @default("America/Denver")
 
   updatedAt DateTime @updatedAt
+}
+
+/// How a task decides whether a day counts as done.
+enum TaskAutoRule {
+  /// A checkbox you tick yourself.
+  manual
+  /// Ticks itself when the day's active calories reach the plan's exercise floor.
+  activeCalsAtLeastTarget
+  /// Ticks itself when the day's consumed calories stay under the plan's ceiling.
+  consumedCalsAtMostCeiling
+}
+
+/// A daily habit tracked for a streak — "No eating out", "Hit 1,200 active".
+///
+/// Tasks belong to a plan. Starting a new plan begins with none, so a streak
+/// always describes one attempt rather than spanning two unrelated ones.
+model Task {
+  id     String @id @default(cuid())
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  name String
+  /// Display order on the Log and Progress screens.
+  position Int @default(0)
+
+  autoRule TaskAutoRule @default(manual)
+
+  /// The first day this task counts toward streaks and totals — the later of
+  /// the plan's start and the day the task was added. Without it, a habit
+  /// added on day 20 would read 0 out of 20 and look like a failure.
+  startDate DateTime @db.Date
+
+  completions TaskCompletion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId, position])
+}
+
+/// One day a manual task was ticked.
+///
+/// The row's existence *is* the completion — there is no boolean. Unticking
+/// deletes the row, so there is no third "explicitly not done" state to reason
+/// about anywhere. Auto-linked tasks store nothing here; their history is
+/// derived from the day's logged calories.
+model TaskCompletion {
+  id     String @id @default(cuid())
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  createdAt DateTime @default(now())
+
+  @@unique([taskId, date])
+  @@index([taskId, date])
 }
