@@ -91,7 +91,7 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
 
       <p
         className="text-muted"
-        style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+        style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
       >
         Every field saves on its own as you fill it in. Come back through the day
         and add the rest — nothing here needs finishing in one sitting.
@@ -176,7 +176,7 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
             </p>
             <p
               className="text-muted"
-              style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+              style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
             >
               Tick each one off as you do it. The number beside it is how many days
               in a row you&apos;ve managed it.
@@ -192,7 +192,7 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
           </p>
           <p
             className="text-muted"
-            style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+            style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
           >
             Optional, any day you feel like it. Photos are resized on your phone
             before they upload, so the originals stay on your device.
@@ -229,7 +229,7 @@ function Group({
       <p className="log-group-time">{title}</p>
       <p
         className="text-muted"
-        style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+        style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
       >
         {hint}
       </p>

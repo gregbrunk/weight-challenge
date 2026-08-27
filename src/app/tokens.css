@@ -1,231 +1,302 @@
-/* Design tokens — Contemporary design system, sage accent.
+/* Design tokens — Material design system.
    Reference the custom properties; never inline raw values.
-   Fonts: Jost (body + display), Overpass Mono (labels, code, data).
+   Fonts: Inter (body + UI), Roboto (display + headline), Fira Code (data).
 
-   The accent departs from the design system's fuchsia (#C800DF) and pink
-   (#E60076). This is an app opened twice a day, every day, for three months,
-   and a high-chroma magenta is tiring at that frequency. Everything structural
-   stays: the type pairing, the 4px spacing rhythm, the radius and elevation
-   scales, and WCAG 2.2 AA as the floor.
+   Adapted from the `material-ui` skill. Everything structural comes from
+   there: the tonal elevation ladder, the state-layer interaction model, the
+   4px spacing rhythm, the shape scale, and WCAG 2.2 AA as the floor.
 
-   Every value below was measured rather than eyeballed. Ratios are noted where
-   they are close to a threshold or where a rule had to be broken. */
+   Every value below was measured rather than eyeballed, against the surface
+   it actually sits on rather than against white. Ratios are noted where a
+   value is close to a threshold or where a rule had to be broken.
+
+   The two rules most easily undone by accident:
+
+     1. The canvas is TINTED and cards are LIGHTER than it. A white page with
+        tinted cards is this system upside down. Dark mode runs the same rule
+        the other way round the ladder.
+     2. A card must carry a border or a shadow. Card-against-canvas measures
+        1.07:1, so the tone difference is decoration, not an edge. */
 
 :root {
   /* ---- Accent ----
-     A desaturated sage. Deep enough to carry text on white at 5.63:1, which
-     is what a lighter, more literal sage could not do. */
-  --color-primary: #4f6f52;
-  /* Deep pine, for the rare second accent. 6.08:1 on white. */
-  --color-secondary: #3d6b5c;
+     6.38:1 on a white card, 5.94:1 on the canvas, both directions. */
+  --color-primary: #6442d6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #e9ddff;
+  --color-on-primary-container: #21005d; /* 13.29 on its container */
+
+  /* The palette's second violet is 1.85:1 on white. It is a container tone,
+     never text and never a fill behind light text. There is no text-safe
+     secondary in this system and none has been invented. */
+  --color-secondary-container: #c8b3fd;
+  --color-on-secondary-container: #21005d; /* 9.26 */
 
   /* ---- Status ----
-     These are darker than the design system's defaults because the originals
-     failed as text: #16A34A measured 3.30:1 on white and #D97706 measured
-     3.19:1, both well under the 4.5 floor, and worse again on their own 10%
-     badge tints. The values here clear 4.5:1 against white *and* against their
-     tint, which is the check the badge rules actually require. */
-  --color-success: #0f7a3d; /* 5.42 on white, 4.73 on tint */
-  --color-warning: #92400e; /* 7.09 on white, 6.08 on tint */
-  --color-danger: #b91c1c; /* 6.47 on white, 5.45 on tint */
-
-  /* ---- Neutral ramp (derived from #111827) ---- */
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
-
-  /* ---- Semantic surfaces (light) ---- */
-  --color-surface: #ffffff;
-  --color-surface-raised: #ffffff;
-  --color-surface-sunken: var(--gray-50);
-  --color-text: #111827;
-  --color-text-muted: var(--gray-600);
-  --color-border: var(--gray-200);
-  --color-divider: var(--gray-100);
-  --color-on-accent: #ffffff;
-
-  /* Filled controls. Light mode: accent background, white text (5.63:1). */
-  --accent-fill: var(--color-primary);
-  --accent-fill-secondary: var(--color-secondary);
-  --danger-fill: var(--color-danger);
+     Each status is a FILL and a TEXT value, and they are not interchangeable.
+     The fills are mid-tones: white on #16A34A is 3.30:1 and fails. The text
+     values are chosen against the DEEPEST surface they could land on, not
+     against white — #DC2626 is 4.83:1 on a card but 3.92:1 on --color-emphasis,
+     which is how a status colour passes review and still fails in place. */
+  --color-success: #16a34a; /* fill; dark text on it is 5.38 */
+  --color-warning: #d97706; /* fill; dark text on it is 5.57 */
+  --color-danger: #dc2626; /* fill; white text on it is 4.83 */
+  --color-on-success: #111827;
+  --color-on-warning: #111827;
   --color-on-danger: #ffffff;
+  --color-success-text: #146c34; /* 5.28 on the worst surface */
+  --color-warning-text: #9a4507; /* 5.28 */
+  --color-danger-text: #b91c1c; /* 5.25 */
+
+  /* ---- Neutral ramp (violet-tinted, per Material's tonal neutrals) ---- */
+  --neutral-05: #faf8ff;
+  --neutral-10: #f4f1fa;
+  --neutral-20: #eae7f1;
+  --neutral-30: #dbd7e4;
+  --neutral-40: #c5c0d0;
+  --neutral-50: #a39eaf;
+  --neutral-60: #79747e; /* 4.55 on white but 3.69 on the top surface: outline only */
+  --neutral-70: #625b6e; /* 6.48 on white, 5.26 worst case: the muted-text value */
+  --neutral-80: #575062;
+  --neutral-90: #3b3546;
+  --neutral-95: #241f2e;
+  --neutral-99: #111827;
+
+  /* ---- Elevation ladder ----
+     #6442D6 composited onto white at Material's elevation opacities, computed
+     ahead of time so nothing blends at runtime. This is TINT INTENSITY, not
+     elevation order — the roles below are the elevation order. */
+  --color-surface-container-lowest: #ffffff; /* 0%  */
+  --color-surface-container-low: #f7f6fd; /* 5%  */
+  --color-surface-container: #f3f0fc; /* 8%  */
+  --color-surface-container-high: #eeeafa; /* 11% */
+  --color-surface-container-highest: #e9e5f9; /* 14% */
+
+  /* ---- Surface roles — build with these ---- */
+  --color-surface: var(--color-surface-container-low); /* page canvas */
+  --color-canvas: var(--color-surface);
+  --color-card: var(--color-surface-container-lowest); /* cards, nav, app bar */
+  --color-card-raised: var(--color-surface-container-lowest);
+  --color-well: var(--color-surface-container); /* inset areas, tracks */
+  --color-emphasis: var(--color-surface-container-high); /* selected, hover fills */
+
+  --color-text: #111827; /* 17.74 on a card, 16.52 on the canvas */
+  --color-text-muted: var(--neutral-70);
+  --color-outline: var(--neutral-60); /* input outlines; >=3:1 everywhere */
+  --color-outline-variant: var(--neutral-30); /* hairlines and dividers */
+  --color-scrim: rgb(17 24 39 / 0.4);
+
+  /* ---- State layers ----
+     Material's interaction model: a wash of the element's own content colour
+     over itself. One mechanism covers every variant in both themes, and it is
+     contrast-safe by construction — white on a hovered primary button is
+     5.43:1 and on a pressed one 5.18:1, which a brightness() filter cannot
+     promise. */
+  --state-hover: 0.08;
+  --state-focus: 0.1;
+  --state-pressed: 0.1;
+  --state-disabled-content: 0.38;
+  --state-disabled-container: 0.12;
 
   /* ---- Type ---- */
-  --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-overpass-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-roboto), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, monospace;
 
-  --text-display: clamp(2.5rem, 6vw, 4rem);
-  --text-h1: clamp(2rem, 4.5vw, 3rem);
-  --text-h2: 2.25rem;
-  --text-h3: 1.5rem;
-  --text-h4: 1.25rem;
-  --text-body-lg: 1.125rem;
-  --text-body-md: 1rem;
-  --text-body-sm: 0.875rem;
-  --text-label-caps: 0.75rem;
+  --text-display: 2rem; /* 32 */
+  --text-headline: 1.5rem; /* 24 */
+  --text-title-lg: 1.25rem; /* 20 */
+  --text-title-md: 1rem; /* 16 */
+  --text-body-lg: 1rem; /* 16 */
+  --text-body-md: 0.875rem; /* 14 */
+  --text-label-lg: 0.875rem; /* 14 */
+  --text-label-caps: 0.75rem; /* 12 */
 
-  --leading-tight: 1.08;
-  --leading-snug: 1.25;
-  --leading-normal: 1.6;
+  --leading-tight: 1.2;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
 
-  --weight-light: 300;
   --weight-regular: 400;
   --weight-medium: 500;
+  --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-black: 800;
 
-  /* ---- Spacing (4px base, comfortable density) ---- */
+  /* ---- Spacing (4px base) ---- */
   --space-2xs: 4px;
   --space-xs: 8px;
-  --space-sm: 8px;
+  --space-sm: 12px;
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
   --space-2xl: 48px;
   --space-3xl: 64px;
-  --space-4xl: 96px;
 
-  /* ---- Radius ---- */
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  /* ---- Shape ----
+     Fully-rounded buttons are a Material signature; a --radius-sm button reads
+     as a different system entirely. */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
-  /* ---- Elevation ---- */
-  --shadow-sm: 0 1px 2px rgb(17 24 39 / 0.06);
-  --shadow-md: 0 4px 12px rgb(17 24 39 / 0.08);
-  --shadow-lg: 0 12px 32px rgb(17 24 39 / 0.12);
+  /* ---- Elevation shadows ---- */
+  --shadow-1: 0 1px 2px rgb(17 24 39 / 0.3), 0 1px 3px 1px rgb(17 24 39 / 0.15);
+  --shadow-2: 0 1px 2px rgb(17 24 39 / 0.3), 0 2px 6px 2px rgb(17 24 39 / 0.15);
+  --shadow-3: 0 4px 8px 3px rgb(17 24 39 / 0.15), 0 1px 3px rgb(17 24 39 / 0.3);
 
   /* ---- Motion ---- */
-  --ease-out: cubic-bezier(0.2, 0, 0, 1);
-  --dur-fast: 120ms;
-  --dur-base: 200ms;
-  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --dur-short: 100ms;
+  --dur-medium: 250ms;
+  --dur-long: 450ms;
 
   /* ---- Layout ---- */
-  --max-content: 1280px;
+  --max-content: 1240px;
   --gutter: var(--space-md);
-  --focus-ring: 2px solid var(--color-primary);
+  --focus-ring: 3px solid var(--color-primary);
   --focus-offset: 2px;
+  --touch-target: 48px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 600px) {
+  :root {
+    --gutter: var(--space-lg);
+  }
+}
+@media (min-width: 840px) {
   :root {
     --gutter: var(--space-xl);
   }
 }
-@media (min-width: 1024px) {
-  :root {
-    --gutter: var(--space-2xl);
-  }
-}
 
 /* ---- Dark theme ----
-   The accent lifts to a pale sage, because the deep one reads as near-black
-   against a near-black surface.
-
-   The design system says a dark-mode filled button keeps the *light* accent as
-   its background with dark text. That rule does not survive measurement: the
-   light sage against #0B0F19 is 3.40:1, and the system's own fuchsia is 4.12:1
-   — both under the 4.5 floor for the label sitting on them. So filled buttons
-   here use the *lifted* accent as the background with dark text, which
-   measures 9.16:1. Accessibility wins over the house rule, deliberately. */
+   #6442D6 on a near-black surface is 2.2:1 and fails outright, so the primary
+   lifts to a light tone and the on-colour darkens. A filled primary button in
+   dark mode is light violet with DARK text — never the brand violet with white
+   text. The surface roles map onto the ladder in the opposite direction: the
+   canvas is the darkest tone and cards lift away from it. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-primary: #9cbba2;
-    --color-secondary: #8fc3ae;
-    --color-success: #4ade80;
-    --color-warning: #fbbf24;
-    --color-danger: #f87171;
+    color-scheme: dark;
 
-    --color-surface: #0b0f19;
-    --color-surface-raised: #151b2b;
-    --color-surface-sunken: #070a11;
-    --color-text: #f9fafb;
-    --color-text-muted: #9ca3af;
-    --color-border: #2a3244;
-    --color-divider: #1c2233;
-    --color-on-accent: #0b0f19;
+    --color-primary: #cfbcff; /* 10.85 on the canvas */
+    --color-on-primary: #381e72; /* 7.70 on the primary */
+    --color-primary-container: #4b33a8;
+    --color-on-primary-container: #e9ddff; /* 6.95 */
+    --color-secondary-container: #4a3f73;
+    --color-on-secondary-container: #e9ddff; /* 7.22 */
 
-    --accent-fill: #9cbba2;
-    --accent-fill-secondary: #8fc3ae;
-    /* White on #F87171 is 2.77:1 and fails; dark text on it is 6.92:1. */
-    --danger-fill: #f87171;
-    --color-on-danger: #0b0f19;
+    --color-success: #6ee7a0;
+    --color-warning: #ffd08a;
+    --color-danger: #ffb4ab;
+    --color-on-success: #14121c;
+    --color-on-warning: #14121c;
+    --color-on-danger: #14121c;
+    --color-success-text: #6ee7a0;
+    --color-warning-text: #ffd08a;
+    --color-danger-text: #ffb4ab;
 
-    --chart-weight: #9cbba2;
-    --chart-bodyfat: #fbbf24;
-    --chart-vo2: #c4b5fd;
-    --chart-systolic: #f87171;
-    --chart-diastolic: #93c5fd;
-    --chart-goal: #6b7280;
-    --chart-grid: #1c2233;
+    --color-surface-container-lowest: #0f0d16;
+    --color-surface-container-low: #1d1b27;
+    --color-surface-container: #23202e;
+    --color-surface-container-high: #292535;
+    --color-surface-container-highest: #2e2a3c;
+
+    --color-surface: #14121c;
+    --color-canvas: var(--color-surface);
+    --color-card: var(--color-surface-container-low);
+    --color-card-raised: var(--color-surface-container);
+    --color-well: var(--color-surface-container-lowest);
+    --color-emphasis: var(--color-surface-container-high);
+
+    --color-text: #f5f1fa; /* 16.63 */
+    --color-text-muted: #a5a0b3; /* 7.31 on the canvas, 5.47 worst case */
+    --color-outline: #948f9e; /* 4.42 worst case: boundary only, never text */
+    --color-outline-variant: #453e52;
+    --color-scrim: rgb(0 0 0 / 0.6);
   }
 }
 
 :root[data-theme="dark"] {
-  --color-primary: #9cbba2;
-  --color-secondary: #8fc3ae;
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
-  --color-danger: #f87171;
+  color-scheme: dark;
 
-  --color-surface: #0b0f19;
-  --color-surface-raised: #151b2b;
-  --color-surface-sunken: #070a11;
-  --color-text: #f9fafb;
-  --color-text-muted: #9ca3af;
-  --color-border: #2a3244;
-  --color-divider: #1c2233;
-  --color-on-accent: #0b0f19;
+  --color-primary: #cfbcff;
+  --color-on-primary: #381e72;
+  --color-primary-container: #4b33a8;
+  --color-on-primary-container: #e9ddff;
+  --color-secondary-container: #4a3f73;
+  --color-on-secondary-container: #e9ddff;
 
-  --accent-fill: #9cbba2;
-  --accent-fill-secondary: #8fc3ae;
-  --danger-fill: #f87171;
-  --color-on-danger: #0b0f19;
+  --color-success: #6ee7a0;
+  --color-warning: #ffd08a;
+  --color-danger: #ffb4ab;
+  --color-on-success: #14121c;
+  --color-on-warning: #14121c;
+  --color-on-danger: #14121c;
+  --color-success-text: #6ee7a0;
+  --color-warning-text: #ffd08a;
+  --color-danger-text: #ffb4ab;
 
-  --chart-weight: #9cbba2;
-  --chart-bodyfat: #fbbf24;
-  --chart-vo2: #c4b5fd;
-  --chart-systolic: #f87171;
-  --chart-diastolic: #93c5fd;
-  --chart-goal: #6b7280;
-  --chart-grid: #1c2233;
+  --color-surface-container-lowest: #0f0d16;
+  --color-surface-container-low: #1d1b27;
+  --color-surface-container: #23202e;
+  --color-surface-container-high: #292535;
+  --color-surface-container-highest: #2e2a3c;
+
+  --color-surface: #14121c;
+  --color-canvas: var(--color-surface);
+  --color-card: var(--color-surface-container-low);
+  --color-card-raised: var(--color-surface-container);
+  --color-well: var(--color-surface-container-lowest);
+  --color-emphasis: var(--color-surface-container-high);
+
+  --color-text: #f5f1fa;
+  --color-text-muted: #a5a0b3;
+  --color-outline: #948f9e;
+  --color-outline-variant: #453e52;
+  --color-scrim: rgb(0 0 0 / 0.6);
 }
 
 /* =========================================================================
    App additions
-   -------------------------------------------------------------------------
-   The design system ships no data-visualisation palette, and this app plots
-   five metrics that must stay apart from each other and from the accent.
-   Each clears 3:1 against its own surface, the AA floor for graphical
-   objects. VO2 max is violet rather than green so it doesn't collide with the
-   sage accent on the weight series.
    ========================================================================= */
-:root {
-  --chart-weight: var(--color-primary);
-  --chart-bodyfat: #b45309;
-  --chart-vo2: #6d28d9;
-  --chart-systolic: #dc2626;
-  --chart-diastolic: #1d4ed8;
-  --chart-goal: var(--gray-400);
-  --chart-grid: var(--gray-200);
 
-  /* Status tints. 10% of the status color over the surface, per the badge
-     rules — declared once so every badge and alert tints identically. */
-  --tint-success: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
-  --tint-warning: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
-  --tint-danger: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
-  --tint-primary: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+:root {
+  /* ---- Chart series ----
+     The design system's own chart ramp is one hue in tonal steps, which is a
+     SEQUENTIAL scale: adjacent steps are 1.6-2.5:1 apart, under the 3:1 that
+     WCAG 1.4.11 wants of adjacent meaningful graphics. This app plots five
+     unordered metrics, which is categorical data, so the ramp does not apply
+     and distinct hues are used instead.
+
+     Each clears 3:1 against --color-card, the surface charts are drawn on,
+     and 4.5:1 so it can also carry a direct label. Series that share a chart
+     also differ in luminance, because equal-luminance hues are identical in
+     greyscale and to some forms of colour blindness:
+
+       weight #3D2B7D (11.41) with goal #79747E (4.55), and the goal is dashed
+       systolic #B91C1C (6.47) with diastolic #1E3A8A (10.36)
+
+     Weight takes the primary's deepest tone because it is the series this app
+     exists to show. */
+  --chart-weight: #3d2b7d;
+  --chart-bodyfat: #9a4507;
+  --chart-vo2: #0f766e;
+  --chart-systolic: #b91c1c;
+  --chart-diastolic: #1e3a8a;
+  --chart-goal: #79747e;
+  --chart-grid: var(--color-outline-variant);
+
+  /* Status tints. 12% of the status colour over the CARD, since that is what
+     a badge sits on — declared once so every badge and alert tints alike. */
+  --tint-success: color-mix(in srgb, var(--color-success) 12%, var(--color-card));
+  --tint-warning: color-mix(in srgb, var(--color-warning) 12%, var(--color-card));
+  --tint-danger: color-mix(in srgb, var(--color-danger) 12%, var(--color-card));
+  --tint-primary: color-mix(in srgb, var(--color-primary) 12%, var(--color-card));
 
   /* iOS safe areas. The bottom tab bar and any fixed footer must clear the
      home indicator; these resolve to 0 everywhere else. */
@@ -234,6 +305,30 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 
-  /* Height of the mobile tab bar, so scroll containers can pad past it. */
-  --tabbar-height: 56px;
+  /* Height of the mobile navigation bar, so scroll containers can pad past
+     it. Material's bottom bar is 80px, taller than the old 56px, because the
+     label is never dropped. */
+  --navbar-height: 80px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Lifted for a dark card. Same pairing rules: weight against a dashed
+       goal, systolic against a distinctly lighter diastolic. */
+    --chart-weight: #cfbcff; /* 9.93 on the card */
+    --chart-bodyfat: #ffd08a; /* 11.82 */
+    --chart-vo2: #5eead4; /* 11.46 */
+    --chart-systolic: #ffb4ab; /* 9.99 */
+    --chart-diastolic: #7aa7f0; /* 6.96 */
+    --chart-goal: #948f9e; /* 5.40 */
+  }
+}
+
+:root[data-theme="dark"] {
+  --chart-weight: #cfbcff;
+  --chart-bodyfat: #ffd08a;
+  --chart-vo2: #5eead4;
+  --chart-systolic: #ffb4ab;
+  --chart-diastolic: #7aa7f0;
+  --chart-goal: #948f9e;
 }

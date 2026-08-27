@@ -56,7 +56,7 @@ export default async function NewPlanPage() {
           <Link
             href="/plan"
             className="text-muted"
-            style={{ fontSize: "var(--text-body-sm)" }}
+            style={{ fontSize: "var(--text-body-md)" }}
           >
             ← Back to the current plan
           </Link>

@@ -90,7 +90,11 @@ export function MetricChart({
           {/* No negative left margin: it reclaims a few pixels but clips the
               y-axis labels, and a weight axis reading "33.5" instead of
               "233.5" is worse than a slightly narrower plot. */}
-          <LineChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          {/* The right margin is load-bearing: the last tick sits at the right
+              edge of the plot and its label is centred on it, so half of
+              "Aug 27" hangs past the edge and gets clipped to "Aug". The
+              margin is the room that overhang needs. */}
+          <LineChart data={rows} margin={{ top: 4, right: 30, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} className="chart-grid" />
 
             <XAxis
@@ -100,6 +104,10 @@ export function MetricChart({
               axisLine={false}
               className="chart-axis"
               minTickGap={8}
+              // Dates sat directly on the lowest gridline and read as part of
+              // it. This is the gap between the axis and its labels.
+              tickMargin={12}
+              height={36}
             />
             <YAxis
               domain={domain ?? ["auto", "auto"]}

@@ -4,17 +4,21 @@
  * Committed as a script rather than hand-made binaries so the mark can be
  * changed in one place and re-rendered: `npm run icons`.
  *
- * The mark is a descending line on a sage field — the weight trend, which is
- * what the app is for. It is drawn heavy and simple because it has to survive
- * being 32 pixels wide in a browser tab.
+ * The mark is a bathroom scale on a violet field: a rounded platform with a
+ * dial and a needle. It is drawn heavy and simple because it has to survive
+ * being 32 pixels wide in a browser tab — at that size the needle is the only
+ * thing separating it from a plain rounded square, so it is the boldest stroke
+ * in the mark and it points off-centre, where a symmetrical one would read as
+ * a cross.
  */
 
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import sharp from "sharp";
 
-const SAGE = "#4f6f52";
-const INK = "#f4f7f4";
+// The design system's primary, and its on-colour.
+const VIOLET = "#6442d6";
+const INK = "#f5f1fa";
 
 /**
  * @param size    canvas size in pixels
@@ -23,32 +27,48 @@ const INK = "#f4f7f4";
  */
 function markSvg(size, bleed) {
   const radius = bleed ? 0 : Math.round(size * 0.22);
-  // Keep the line inside the maskable safe zone — the middle 80% — so no
+  // Keep the mark inside the maskable safe zone — the middle 80% — so no
   // platform's circular or squircle crop can clip it.
-  const inset = size * 0.24;
-  const width = size - inset * 2;
-  const stroke = Math.max(2, Math.round(size * 0.075));
+  const inset = size * 0.23;
+  const box = size - inset * 2;
+  const stroke = Math.max(2, Math.round(size * 0.07));
 
-  const x = (t) => inset + width * t;
-  const y = (t) => inset + width * t;
+  // The platform: a rounded square, squatter than it is wide, the way a scale
+  // reads when you look down at it.
+  const platformH = box * 0.86;
+  const platformY = inset + (box - platformH) / 2;
+  const platformR = box * 0.2;
 
-  // A downward trend with one plateau, so it reads as a real weight curve
-  // rather than a generic arrow.
-  const points = [
-    [x(0), y(0.06)],
-    [x(0.3), y(0.42)],
-    [x(0.52), y(0.34)],
-    [x(0.78), y(0.72)],
-    [x(1), y(0.86)],
-  ]
-    .map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`)
-    .join(" ");
+  // The dial sits high on the platform, leaving the lower third as the tread —
+  // the proportion that makes it a scale rather than a picture frame. Its ring
+  // is deliberately lighter than every other stroke so the needle inside it is
+  // the thing the eye lands on; equal weights turned the pair into a single
+  // grey blob at favicon size.
+  const dialR = box * 0.22;
+  const dialX = inset + box / 2;
+  const dialY = platformY + platformH * 0.4;
+  const dialStroke = Math.max(1.5, stroke * 0.62);
+
+  // The needle runs from a hub at the centre out to just inside the ring, at
+  // about one o'clock. It stops at the hub rather than crossing it: a line
+  // through the middle of a circle reads as a "no entry" slash, which is a bad
+  // thing for an icon to almost say.
+  const angle = -Math.PI / 3.2;
+  const tipX = dialX + Math.cos(angle) * dialR * 0.72;
+  const tipY = dialY + Math.sin(angle) * dialR * 0.72;
+  const hubR = Math.max(1, stroke * 0.55);
+
+  const n = (value) => value.toFixed(1);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${radius}" fill="${SAGE}"/>
-  <polyline points="${points}" fill="none" stroke="${INK}"
-    stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="${x(1).toFixed(1)}" cy="${y(0.86).toFixed(1)}" r="${(stroke * 0.85).toFixed(1)}" fill="${INK}"/>
+  <rect width="${size}" height="${size}" rx="${radius}" fill="${VIOLET}"/>
+  <rect x="${n(inset)}" y="${n(platformY)}" width="${n(box)}" height="${n(platformH)}"
+    rx="${n(platformR)}" fill="none" stroke="${INK}" stroke-width="${stroke}"/>
+  <circle cx="${n(dialX)}" cy="${n(dialY)}" r="${n(dialR)}"
+    fill="none" stroke="${INK}" stroke-width="${n(dialStroke)}" opacity="0.75"/>
+  <line x1="${n(dialX)}" y1="${n(dialY)}" x2="${n(tipX)}" y2="${n(tipY)}"
+    stroke="${INK}" stroke-width="${stroke}" stroke-linecap="round"/>
+  <circle cx="${n(dialX)}" cy="${n(dialY)}" r="${n(hubR)}" fill="${INK}"/>
 </svg>`;
 }
 

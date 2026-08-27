@@ -87,14 +87,18 @@ function ArrowLink({
   label: string;
   direction: "previous" | "next";
 }) {
-  const icon = direction === "previous" ? "‹" : "›";
+  // An SVG rather than a "\u2039" glyph. The glyph sits wherever the font's
+  // metrics put it — Jost and Inter disagree by several pixels — so it was
+  // centred by a hard-coded nudge that stopped being right the moment the type
+  // changed. A path centred in its own viewBox has no font to disagree with.
+  const icon = <Chevron direction={direction} />;
 
   // A disabled arrow stays in the layout and stays announced, so the control
   // doesn't jump around at the ends of the plan.
   if (!enabled) {
     return (
       <span className="btn btn-secondary btn-icon date-nav-arrow" aria-disabled="true">
-        <span aria-hidden="true">{icon}</span>
+        {icon}
         <span className="sr-only">{label} — outside the plan</span>
       </span>
     );
@@ -102,8 +106,26 @@ function ArrowLink({
 
   return (
     <Link href={href} className="btn btn-secondary btn-icon date-nav-arrow">
-      <span aria-hidden="true">{icon}</span>
+      {icon}
       <span className="sr-only">{label}</span>
     </Link>
+  );
+}
+
+function Chevron({ direction }: { direction: "previous" | "next" }) {
+  return (
+    <svg
+      className="date-nav-chevron"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={direction === "previous" ? "M15 5 L8 12 L15 19" : "M9 5 L16 12 L9 19"} />
+    </svg>
   );
 }

@@ -51,7 +51,7 @@ export function TaskManager({
   return (
     <div className="flex flex-col" style={{ gap: "var(--space-lg)" }}>
       {tasks.length === 0 ? (
-        <p className="text-muted" style={{ fontSize: "var(--text-body-sm)" }}>
+        <p className="text-muted" style={{ fontSize: "var(--text-body-md)" }}>
           No tasks yet. Add the handful of things you need to do each day to hit your
           numbers — they&apos;ll appear on the Log screen with a streak count.
         </p>

@@ -70,7 +70,7 @@ export function PhotoTimeline({ days }: { days: TimelineDay[] }) {
                   type="button"
                   className="photo-timeline-frame"
                   onClick={() => open(day, index)}
-                  style={{ padding: 0, border: "1px solid var(--color-border)", cursor: "pointer" }}
+                  style={{ padding: 0, border: "1px solid var(--color-outline-variant)", cursor: "pointer" }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

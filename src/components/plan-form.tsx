@@ -166,7 +166,7 @@ export function PlanForm({ mode, planId, initialValues }: Props) {
           <details className="mt-1">
             <summary
               className="cursor-pointer text-muted"
-              style={{ fontSize: "var(--text-body-sm)" }}
+              style={{ fontSize: "var(--text-body-md)" }}
             >
               Advanced
             </summary>
@@ -281,7 +281,7 @@ export function PlanForm({ mode, planId, initialValues }: Props) {
           <hr
             style={{
               border: 0,
-              borderTop: "1px solid var(--color-divider)",
+              borderTop: "1px solid var(--color-outline-variant)",
               margin: "var(--space-md) 0",
             }}
           />
@@ -294,10 +294,10 @@ export function PlanForm({ mode, planId, initialValues }: Props) {
             <p
               className="text-muted"
               style={{
-                fontSize: "var(--text-body-sm)",
+                fontSize: "var(--text-body-md)",
                 marginTop: "var(--space-md)",
                 paddingTop: "var(--space-md)",
-                borderTop: "1px solid var(--color-divider)",
+                borderTop: "1px solid var(--color-outline-variant)",
               }}
             >
               {preview.warning}
@@ -323,7 +323,7 @@ function Section({
       <legend className="sr-only">{title}</legend>
       <h2
         style={{
-          fontSize: "var(--text-h4)",
+          fontSize: "var(--text-title-lg)",
           fontWeight: "var(--weight-bold)",
           lineHeight: "var(--leading-snug)",
         }}
@@ -332,7 +332,7 @@ function Section({
       </h2>
       <p
         className="text-muted"
-        style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+        style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
       >
         {description}
       </p>
@@ -359,14 +359,14 @@ function SummaryRow({
     >
       <span
         className="text-muted"
-        style={{ fontSize: "var(--text-body-sm)" }}
+        style={{ fontSize: "var(--text-body-md)" }}
       >
         {label}
       </span>
       <span
         className="numeric"
         style={{
-          fontSize: emphasis ? "var(--text-h4)" : "var(--text-body-md)",
+          fontSize: emphasis ? "var(--text-title-lg)" : "var(--text-body-md)",
           fontWeight: emphasis ? "var(--weight-bold)" : "var(--weight-medium)",
           whiteSpace: "nowrap",
         }}
@@ -375,7 +375,7 @@ function SummaryRow({
         {unit && value !== "—" && (
           <span
             className="text-muted"
-            style={{ fontSize: "var(--text-body-sm)", marginLeft: "var(--space-2xs)" }}
+            style={{ fontSize: "var(--text-body-md)", marginLeft: "var(--space-2xs)" }}
           >
             {unit}
           </span>

@@ -35,7 +35,7 @@ export default async function UnlockPage({ searchParams }: PageProps<"/unlock">)
 
           <h1
             style={{
-              fontSize: "var(--text-h3)",
+              fontSize: "var(--text-headline)",
               fontWeight: "var(--weight-bold)",
               lineHeight: "var(--leading-snug)",
               letterSpacing: "-0.01em",
@@ -48,7 +48,7 @@ export default async function UnlockPage({ searchParams }: PageProps<"/unlock">)
           <p
             className="text-muted"
             style={{
-              fontSize: "var(--text-body-sm)",
+              fontSize: "var(--text-body-md)",
               marginBottom: "var(--space-lg)",
             }}
           >

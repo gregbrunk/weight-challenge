@@ -24,10 +24,10 @@ html {
 }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-canvas);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: var(--text-body-md);
+  font-size: var(--text-body-lg);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
   /* Stops the whole page rubber-banding on iOS while inner areas scroll. */
@@ -36,6 +36,69 @@ body {
 
 :where(h1, h2, h3, h4) {
   font-family: var(--font-display);
+}
+
+/* Canonical Material 3 sets display and headline at regular 400 and gets
+   hierarchy from size alone. This theme's reference implementation does not,
+   and the reference is what the app is being matched to. Body copy stays 400 —
+   the contrast between a 700 heading and 400 body is doing the work. */
+:where(h1, h2) {
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+}
+
+:where(h3, h4) {
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+/* Material's interaction model: a translucent wash of the element's own
+   content colour over itself, at a fixed opacity per state. One rule covers
+   filled, tonal, outlined and text variants in both themes, and it is
+   contrast-safe by construction — white on a hovered primary button measures
+   5.43:1, where a brightness() filter promises nothing. */
+.state-layer,
+.btn,
+.app-nav-link,
+label.task-control {
+  position: relative;
+  isolation: isolate;
+}
+
+.state-layer::after,
+.btn::after,
+.app-nav-link::after,
+label.task-control::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-short) var(--ease-standard);
+}
+
+.state-layer:not(:disabled):not([aria-disabled="true"]):hover::after,
+.btn:not(:disabled):not([aria-disabled="true"]):hover::after,
+.app-nav-link:hover::after,
+label.task-control:hover::after {
+  opacity: var(--state-hover);
+}
+
+.state-layer:not(:disabled):not([aria-disabled="true"]):focus-visible::after,
+.btn:not(:disabled):not([aria-disabled="true"]):focus-visible::after,
+.app-nav-link:focus-visible::after,
+label.task-control:has(input:focus-visible)::after {
+  opacity: var(--state-focus);
+}
+
+.state-layer:not(:disabled):not([aria-disabled="true"]):active::after,
+.btn:not(:disabled):not([aria-disabled="true"]):active::after,
+.app-nav-link:active::after,
+label.task-control:active::after {
+  opacity: var(--state-pressed);
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -122,9 +185,9 @@ body {
   padding: var(--space-sm) var(--space-md);
   overflow: visible;
   clip-path: none;
-  border-radius: var(--radius-md);
-  background: var(--accent-fill);
-  color: var(--color-on-accent);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   font-weight: var(--weight-medium);
 }
 
@@ -137,27 +200,30 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--space-xs);
-  min-height: 44px;
-  padding: 12px var(--space-lg);
+  /* Material's touch floor is 48px, above the 44px used elsewhere. Pad, never
+     shrink. */
+  min-height: var(--touch-target);
+  padding: var(--space-sm) var(--space-lg);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  /* Fully-rounded is a Material signature; a small-radius button reads as a
+     different system entirely. */
+  border-radius: var(--radius-full);
   font-family: var(--font-sans);
-  font-size: var(--text-body-md);
+  font-size: var(--text-label-lg);
   font-weight: var(--weight-medium);
-  line-height: 1.2;
+  line-height: 1.45;
   cursor: pointer;
   text-decoration: none;
   transition:
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    filter var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
+    background-color var(--dur-short) var(--ease-standard),
+    border-color var(--dur-short) var(--ease-standard);
 }
 
+/* Smaller only in its visual box; the 48px target is held by the tap area. */
 .btn-sm {
-  min-height: 44px;
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--text-body-sm);
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--text-body-md);
 }
 
 .btn-lg {
@@ -169,62 +235,47 @@ body {
   width: 100%;
 }
 
+/* 38% content over a 12% container. That lands near 2.4:1, which WCAG 1.4.3
+   exempts for disabled controls — deliberate, not an oversight. */
 .btn:disabled,
 .btn[aria-disabled="true"] {
-  opacity: 0.5;
+  opacity: var(--state-disabled-content);
   cursor: not-allowed;
 }
 
+/* Every variant's hover, focus and pressed state comes from .state-layer, so
+   none of them hand-picks a second colour. Exactly one filled button per view;
+   the next-most-important action is tonal or outlined. */
 .btn-primary {
-  background: var(--accent-fill);
-  color: var(--color-on-accent);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
-.btn-primary:not(:disabled):hover {
-  filter: brightness(0.92);
-}
-.btn-primary:not(:disabled):active {
-  filter: brightness(0.86);
-  transform: translateY(1px);
+
+/* Material's filled-tonal button: real weight without competing with primary. */
+.btn-tonal {
+  background: var(--color-secondary-container);
+  color: var(--color-on-secondary-container);
 }
 
 .btn-secondary {
   background: transparent;
-  border-color: var(--color-border);
-  color: var(--color-text);
-}
-.btn-secondary:not(:disabled):hover {
-  background: var(--color-surface-sunken);
-}
-.btn-secondary:not(:disabled):active {
-  border-color: var(--color-primary);
+  border-color: var(--color-outline);
+  color: var(--color-primary);
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--color-text);
-}
-.btn-ghost:not(:disabled):hover {
-  background: var(--color-surface-sunken);
-}
-.btn-ghost:not(:disabled):active {
-  background: var(--color-divider);
+  color: var(--color-primary);
 }
 
 .btn-danger {
-  background: var(--danger-fill);
+  background: var(--color-danger);
   color: var(--color-on-danger);
 }
-.btn-danger:not(:disabled):hover {
-  filter: brightness(0.92);
-}
-.btn-danger:not(:disabled):active {
-  filter: brightness(0.86);
-  transform: translateY(1px);
-}
 
-/* Icon-only buttons still need the full 44px target. */
+/* Icon-only buttons still need the full 48px target and an aria-label. */
 .btn-icon {
-  min-width: 44px;
+  min-width: var(--touch-target);
   padding: var(--space-sm);
 }
 
@@ -239,24 +290,27 @@ body {
 }
 
 .field-label {
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   font-weight: var(--weight-medium);
   color: var(--color-text);
   margin-bottom: var(--space-2xs);
 }
 
+/* Material outlined text field. Outlined rather than filled because these sit
+   inside white cards, and the system says pick one variant and never mix. */
 .field-input {
   width: 100%;
-  min-height: 44px;
+  min-height: 56px;
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-xs);
+  background: var(--color-card);
   color: var(--color-text);
   font-family: var(--font-sans);
-  /* 16px minimum: anything smaller makes iOS Safari zoom on focus. */
-  font-size: var(--text-body-md);
-  transition: border-color var(--dur-fast) var(--ease-out);
+  /* 16px minimum: anything smaller makes iOS Safari zoom on focus. In this
+     scale that is --text-body-lg; --text-body-md is 14px and would zoom. */
+  font-size: var(--text-body-lg);
+  transition: border-color var(--dur-short) var(--ease-standard);
 }
 
 .field-input::placeholder {
@@ -264,21 +318,25 @@ body {
 }
 
 .field-input:hover:not(:disabled) {
-  border-color: var(--gray-300);
+  border-color: var(--color-outline);
 }
 
+/* The outline thickens as well as changing colour, so focus is carried by
+   more than hue. The 3px ring from the base rules sits outside it. */
 .field-input:focus-visible {
   border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .field-input:disabled {
-  background: var(--color-surface-sunken);
+  background: var(--color-well);
   color: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .field-input[aria-invalid="true"] {
-  border-color: var(--color-danger);
+  border-color: var(--color-danger-text);
+  box-shadow: inset 0 0 0 1px var(--color-danger-text);
 }
 
 /* Numeric entry is the app's main interaction, so those fields get the mono
@@ -288,13 +346,15 @@ body {
 }
 
 .field-help {
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   color: var(--color-text-muted);
 }
 
+/* The text token, not the fill — #DC2626 is 4.83:1 on a card but 3.92:1 on
+   the deeper surfaces this can land on. */
 .field-error {
-  font-size: var(--text-body-sm);
-  color: var(--color-danger);
+  font-size: var(--text-body-md);
+  color: var(--color-danger-text);
 }
 
 .field-suffix {
@@ -304,17 +364,20 @@ body {
   transform: translateY(-50%);
   pointer-events: none;
   color: var(--color-text-muted);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
 }
 
 /* ---------------------------------------------------------------------------
    Card / bento tile
    --------------------------------------------------------------------------- */
 
+/* A card is LIGHTER than the canvas it sits on: white here, and one rung up
+   the ladder in dark mode. The border is not decoration — card against canvas
+   measures 1.07:1, so the tone difference alone is not an edge. */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--color-card);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-md);
   padding: var(--space-md);
 }
 
@@ -325,7 +388,9 @@ body {
 }
 
 .card-raised {
-  background: var(--color-surface-raised);
+  background: var(--color-card-raised);
+  border-color: transparent;
+  box-shadow: var(--shadow-1);
 }
 
 /* ---------------------------------------------------------------------------
@@ -346,21 +411,104 @@ body {
   line-height: 1.2;
 }
 
+/* Text tokens on the tints, never the fill values: the fills are mid-tones
+   that fail as text, and they fail again on their own tint. */
 .badge-success {
   background: var(--tint-success);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .badge-warning {
   background: var(--tint-warning);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .badge-danger {
   background: var(--tint-danger);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 .badge-neutral {
-  background: var(--color-surface-sunken);
+  background: var(--color-emphasis);
   color: var(--color-text-muted);
+}
+
+/* Count badge, for a nav item or an icon. Capped at 99+ by the caller — a
+   four-digit badge breaks the pill. */
+.badge-count {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  min-width: 20px;
+  padding: 0 var(--space-2xs);
+  justify-content: center;
+  letter-spacing: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Segmented control
+
+   A single choice between two to four views of the same thing. Built on real
+   radio inputs, so arrow-key navigation and the group's announcement come from
+   the platform rather than from JavaScript.
+   --------------------------------------------------------------------------- */
+
+.segmented-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 2px;
+  padding: var(--space-2xs);
+  background: var(--color-emphasis);
+  border-radius: var(--radius-full);
+}
+
+.segmented-option {
+  display: flex;
+  min-width: 0;
+}
+
+.segmented-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The visual pill is 40px; the 48px target comes from the padding around it
+     inside the track. */
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: var(--text-label-lg);
+  font-weight: var(--weight-medium);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-short) var(--ease-standard),
+    color var(--dur-short) var(--ease-standard);
+}
+
+.segmented-label:hover {
+  color: var(--color-text);
+}
+
+/* Selection is carried by a raised pill AND a text-colour change, so it never
+   rests on fill colour alone. */
+.segmented-input:checked + .segmented-label {
+  background: var(--color-card);
+  color: var(--color-text);
+  box-shadow: var(--shadow-1);
+}
+
+/* The input is visually hidden, so it cannot show its own focus ring. */
+.segmented-input:focus-visible + .segmented-label {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 /* ---------------------------------------------------------------------------
@@ -374,17 +522,21 @@ body {
   padding: var(--space-md);
   border: 1px solid;
   border-radius: var(--radius-md);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
+}
+
+.alert {
+  border-radius: var(--radius-sm);
 }
 
 .alert-danger {
-  border-color: var(--color-danger);
+  border-color: var(--color-danger-text);
   background: var(--tint-danger);
   color: var(--color-text);
 }
 
 .alert-success {
-  border-color: var(--color-success);
+  border-color: var(--color-success-text);
   background: var(--tint-success);
   color: var(--color-text);
 }
@@ -429,7 +581,7 @@ body {
 .app-shell {
   min-height: 100dvh;
   /* Clears the fixed tab bar so the last card is never trapped underneath. */
-  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-lg));
+  padding-bottom: calc(var(--navbar-height) + var(--safe-bottom) + var(--space-lg));
 }
 
 .app-main {
@@ -437,14 +589,17 @@ body {
   padding-bottom: var(--space-2xl);
 }
 
+/* Material's navigation bar. Chrome is a card surface, not the canvas — the
+   bar is a layer above the page, not part of its ground. */
 .app-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 50;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background: var(--color-card);
+  border-top: 1px solid var(--color-outline-variant);
+  padding-bottom: var(--safe-bottom);
 }
 
 .app-nav-list {
@@ -460,46 +615,49 @@ body {
 }
 
 .app-nav-link {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  /* 44px minimum target, met by the height rather than by padding alone. */
-  min-height: var(--tabbar-height);
-  padding: var(--space-2xs) var(--space-2xs);
+  gap: var(--space-2xs);
+  /* 48px target met by the height rather than by padding alone. */
+  min-height: var(--navbar-height);
+  padding: var(--space-xs) var(--space-2xs);
   color: var(--color-text-muted);
   text-decoration: none;
-  transition: color var(--dur-fast) var(--ease-out);
+  transition: color var(--dur-short) var(--ease-standard);
 }
 
 .app-nav-link:hover {
   color: var(--color-text);
 }
 
-/* Active state carries both color and a solid indicator bar, so it never
-   depends on color alone. */
+/* Material's active indicator: a filled pill behind the icon. The indicator is
+   a SHAPE as well as a colour, so the active destination is never carried by
+   colour alone — which a 2px underline in the accent very nearly was. */
 .app-nav-link[data-active] {
-  color: var(--color-primary);
-  position: relative;
+  color: var(--color-on-secondary-container);
 }
 
-.app-nav-link[data-active]::before {
+.app-nav-link[data-active] .app-nav-icon::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 32px;
-  height: 2px;
-  background: var(--color-primary);
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  width: 56px;
+  height: 32px;
+  background: var(--color-secondary-container);
   border-radius: var(--radius-full);
+  z-index: -1;
 }
 
 .app-nav-icon {
+  position: relative;
   display: block;
   width: 22px;
   height: 22px;
+  isolation: isolate;
 }
 
 .app-nav-icon svg {
@@ -507,6 +665,7 @@ body {
   height: 100%;
 }
 
+/* Material never drops the label from a navigation bar, at any width. */
 .app-nav-label {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -526,7 +685,7 @@ body {
     right: auto;
     width: 96px;
     border-top: 0;
-    border-right: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-outline-variant);
     padding-top: calc(var(--safe-top) + var(--space-lg));
   }
 
@@ -546,16 +705,10 @@ body {
     gap: var(--space-2xs);
   }
 
+  /* The rail keeps the same pill, so the active destination reads identically
+     at both layouts rather than changing its language with the breakpoint. */
   .app-nav-link[data-active] {
-    background: var(--tint-primary);
-  }
-
-  .app-nav-link[data-active]::before {
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 24px;
+    background: transparent;
   }
 }
 
@@ -563,22 +716,18 @@ body {
    Page header
    --------------------------------------------------------------------------- */
 
+/* The scale tops out at 32px, so it needs no responsive clamping — it is
+   already a mobile-first scale and holds at every breakpoint. */
 .page-title {
-  font-size: var(--text-h2);
+  font-size: var(--text-display);
   font-weight: var(--weight-bold);
-  line-height: var(--leading-snug);
-  letter-spacing: -0.02em;
-}
-
-@media (max-width: 767px) {
-  .page-title {
-    font-size: var(--text-h3);
-  }
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
 }
 
 .page-subtitle {
   color: var(--color-text-muted);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   margin-top: var(--space-2xs);
 }
 
@@ -595,9 +744,10 @@ body {
    Date navigator
    --------------------------------------------------------------------------- */
 
+/* Material's touch floor is 48px, so the arrow columns hold that width. */
 .date-nav {
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: var(--touch-target) 1fr var(--touch-target);
   align-items: center;
   gap: var(--space-sm);
   margin-bottom: var(--space-lg);
@@ -614,11 +764,15 @@ body {
   line-height: var(--leading-snug);
 }
 
+/* No optical nudge: the chevron is an SVG centred in its own viewBox, so it
+   sits in the middle of the button regardless of the typeface. */
 .date-nav-arrow {
-  font-size: var(--text-h3);
-  line-height: 1;
-  /* The chevron glyph sits high in its box; nudge it back onto the centre. */
-  padding-bottom: 4px;
+  padding: 0;
+}
+
+.date-nav-chevron {
+  width: 20px;
+  height: 20px;
 }
 
 .date-nav-today {
@@ -649,12 +803,13 @@ body {
   color: var(--color-text-muted);
 }
 
+/* Status text, not the fill: #16A34A is 3.30:1 and this is 12px type. */
 .autosave-saved {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .autosave-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* ---------------------------------------------------------------------------
@@ -674,20 +829,20 @@ body {
 }
 
 .tile-value {
-  font-size: var(--text-h3);
+  font-size: var(--text-headline);
   font-weight: var(--weight-bold);
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
 
 .tile-delta {
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   margin-top: var(--space-2xs);
 }
 
 .hero-value {
   font-size: var(--text-display);
-  font-weight: var(--weight-black);
+  font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
   letter-spacing: -0.03em;
 }
@@ -698,38 +853,42 @@ body {
 .meter {
   height: 10px;
   border-radius: var(--radius-full);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  background: var(--color-emphasis);
+  border: 1px solid var(--color-outline-variant);
   overflow: hidden;
 }
 
 .meter-fill {
   height: 100%;
   border-radius: var(--radius-full);
-  transition: width var(--dur-slow) var(--ease-out);
+  transition: width var(--dur-long) var(--ease-standard);
 }
 
+/* The text tokens, not the fills. A meter bar is a graphical object and needs
+   3:1 against its own track: #16A34A on --color-emphasis is 2.79:1 and #D97706
+   is 2.70:1, both failing. The darker tones measure 5.52:1 and 5.51:1. */
 .meter-fill-good {
-  background: var(--color-success);
+  background: var(--color-success-text);
 }
 .meter-fill-warn {
-  background: var(--color-warning);
+  background: var(--color-warning-text);
 }
 .meter-fill-over {
-  background: var(--color-danger);
+  background: var(--color-danger-text);
 }
 .meter-fill-neutral {
   background: var(--color-text-muted);
 }
 
+/* Likewise as text: the fill values are mid-tones that fail at every size. */
 .text-success {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .text-warning {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .text-danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* ---------------------------------------------------------------------------
@@ -770,9 +929,9 @@ body {
 .photo-frame {
   position: relative;
   aspect-ratio: 3 / 4;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-outline-variant);
   border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
+  background: var(--color-emphasis);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -787,8 +946,8 @@ body {
 }
 
 .photo-placeholder {
-  font-size: var(--text-h2);
-  font-weight: var(--weight-light);
+  font-size: var(--text-display);
+  font-weight: var(--weight-regular);
   color: var(--color-text-muted);
   line-height: 1;
 }
@@ -866,8 +1025,8 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
   aspect-ratio: 3 / 4;
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  background: var(--color-emphasis);
+  border: 1px solid var(--color-outline-variant);
 }
 
 .photo-timeline-frame img {
@@ -882,14 +1041,14 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
    --------------------------------------------------------------------------- */
 
 .photo-viewer {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-outline-variant);
   border-radius: var(--radius-xl);
-  background: var(--color-surface-raised);
+  background: var(--color-card-raised);
   color: var(--color-text);
   padding: 0;
   max-width: min(560px, calc(100vw - var(--space-xl)));
   max-height: calc(100dvh - var(--space-xl));
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-3);
 }
 
 .photo-viewer::backdrop {
@@ -916,7 +1075,7 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
   max-height: 65dvh;
   object-fit: contain;
   border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
+  background: var(--color-emphasis);
 }
 
 .photo-viewer-nav {
@@ -956,14 +1115,14 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
 }
 
 .chart-title {
-  font-size: var(--text-h4);
+  font-size: var(--text-title-lg);
   font-weight: var(--weight-bold);
   line-height: var(--leading-snug);
 }
 
 .chart-description {
   color: var(--color-text-muted);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   margin-top: 2px;
 }
 
@@ -980,14 +1139,14 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   color: var(--color-text-muted);
 }
 
 .chart-swatch {
   width: 10px;
   height: 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   background: currentColor;
   flex: 0 0 auto;
 }
@@ -1104,10 +1263,10 @@ circle.chart-dot {
 }
 
 .chart-tooltip {
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  background: var(--color-card-raised);
+  border: 1px solid var(--color-outline-variant);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-2);
   padding: var(--space-sm) var(--space-md);
   min-width: 150px;
 }
@@ -1120,7 +1279,7 @@ circle.chart-dot {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   line-height: 1.5;
 }
 
@@ -1140,8 +1299,8 @@ circle.chart-dot {
 .burndown-bar {
   height: 14px;
   border-radius: var(--radius-full);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  background: var(--color-emphasis);
+  border: 1px solid var(--color-outline-variant);
   overflow: hidden;
   margin: var(--space-sm) 0 var(--space-2xs);
 }
@@ -1149,7 +1308,7 @@ circle.chart-dot {
 .burndown-fill {
   height: 100%;
   border-radius: var(--radius-full);
-  background: var(--accent-fill);
+  background: var(--color-primary);
 }
 
 .stat-grid {
@@ -1173,18 +1332,18 @@ circle.chart-dot {
 }
 
 .stat-current {
-  font-size: var(--text-h3);
+  font-size: var(--text-headline);
   font-weight: var(--weight-bold);
   line-height: 1.1;
 }
 
 .stat-best {
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   color: var(--color-text-muted);
 }
 
 .stat-offbest {
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   color: var(--color-warning);
   margin-top: var(--space-2xs);
 }
@@ -1218,17 +1377,14 @@ circle.chart-dot {
   min-width: 0;
   min-height: 48px;
   padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-outline-variant);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  /* An outlined list row on the card, not the canvas showing through. */
+  background: var(--color-card);
   cursor: pointer;
   transition:
-    border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out);
-}
-
-label.task-control:hover {
-  background: var(--color-surface-sunken);
+    border-color var(--dur-short) var(--ease-standard),
+    background-color var(--dur-short) var(--ease-standard);
 }
 
 .task-control[data-done] {
@@ -1251,23 +1407,23 @@ span.task-control {
   flex: 0 0 auto;
   width: 26px;
   height: 26px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-outline);
+  border-radius: var(--radius-xs);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   font-weight: var(--weight-bold);
   color: transparent;
   transition:
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
+    background-color var(--dur-short) var(--ease-standard),
+    border-color var(--dur-short) var(--ease-standard);
 }
 
 .task-box[data-done] {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: #ffffff;
+  color: var(--color-on-success);
 }
 
 .task-body {
@@ -1282,7 +1438,7 @@ span.task-control {
 }
 
 .task-note {
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   color: var(--color-text-muted);
   line-height: var(--leading-snug);
 }
@@ -1327,7 +1483,7 @@ span.task-control {
   gap: var(--space-sm);
   flex-wrap: wrap;
   padding: var(--space-md) 0;
-  border-bottom: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-outline-variant);
 }
 
 .task-manage-row:first-child {
@@ -1357,7 +1513,7 @@ span.task-control {
 }
 
 .streak-name {
-  font-size: var(--text-h4);
+  font-size: var(--text-title-lg);
   font-weight: var(--weight-bold);
   line-height: var(--leading-snug);
 }
@@ -1373,7 +1529,7 @@ span.task-control {
   justify-content: flex-end;
   gap: var(--space-2xs);
   font-family: var(--font-mono);
-  font-size: var(--text-h3);
+  font-size: var(--text-headline);
   font-weight: var(--weight-bold);
   line-height: 1.1;
 }
@@ -1390,7 +1546,7 @@ span.task-control {
 }
 
 .streak-stat-value {
-  font-size: var(--text-h4);
+  font-size: var(--text-title-lg);
   font-weight: var(--weight-bold);
   line-height: 1.2;
   margin-top: var(--space-2xs);
@@ -1440,14 +1596,17 @@ span.task-control {
 
 .calendar-cell[data-in-window] {
   color: var(--color-text-muted);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  background: var(--color-emphasis);
+  border: 1px solid var(--color-outline-variant);
 }
 
+/* Dark on the success fill, not white: white measures 3.30:1 here and fails.
+   Every fill in this system has a designated on- colour; it is looked up, not
+   chosen. */
 .calendar-cell[data-done] {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: #ffffff;
+  color: var(--color-on-success);
   font-weight: var(--weight-bold);
 }
 
@@ -1468,7 +1627,7 @@ span.task-control {
   align-items: center;
   gap: var(--space-2xs);
   flex-wrap: wrap;
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   color: var(--color-text-muted);
 }
 

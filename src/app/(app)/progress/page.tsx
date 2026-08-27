@@ -121,7 +121,7 @@ export default async function ProgressPage() {
             />
           </div>
 
-          <p className="text-muted" style={{ fontSize: "var(--text-body-sm)" }}>
+          <p className="text-muted" style={{ fontSize: "var(--text-body-md)" }}>
             {formatCalories(Math.max(0, progress.deficitRemaining))} cal still to burn
             {progress.requiredDailyDeficitFromHere !== null && (
               <>
@@ -168,7 +168,7 @@ export default async function ProgressPage() {
           </div>
 
           {progress.daysLogged === 0 && (
-            <p className="text-muted" style={{ fontSize: "var(--text-body-sm)", marginTop: "var(--space-md)" }}>
+            <p className="text-muted" style={{ fontSize: "var(--text-body-md)", marginTop: "var(--space-md)" }}>
               Nothing logged yet, so there&apos;s no pace to project from.{" "}
               <Link href="/log">Start logging</Link>.
             </p>
@@ -447,7 +447,7 @@ function EmptyChart({ title }: { title: string }) {
   return (
     <section className="card">
       <h3 className="chart-title">{title}</h3>
-      <p className="text-muted" style={{ fontSize: "var(--text-body-sm)", marginTop: "var(--space-2xs)" }}>
+      <p className="text-muted" style={{ fontSize: "var(--text-body-md)", marginTop: "var(--space-2xs)" }}>
         Nothing logged yet. This chart appears once you record a reading.
       </p>
     </section>

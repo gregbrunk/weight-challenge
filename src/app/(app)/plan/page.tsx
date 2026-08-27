@@ -124,7 +124,7 @@ export default async function PlanPage() {
         </h2>
         <p
           className="text-muted"
-          style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+          style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
         >
           The handful of things you need to do each day to hit your numbers. They
           appear on the Log screen with a streak count, and their records live on
@@ -156,7 +156,7 @@ export default async function PlanPage() {
       </div>
 
       <section aria-labelledby="archive-heading" style={{ marginTop: "var(--space-3xl)" }}>
-        <h2 id="archive-heading" className="page-title" style={{ fontSize: "var(--text-h3)" }}>
+        <h2 id="archive-heading" className="page-title" style={{ fontSize: "var(--text-headline)" }}>
           Archive
         </h2>
         <p className="page-subtitle" style={{ marginBottom: "var(--space-lg)" }}>
@@ -193,14 +193,14 @@ function ArchivedPlanRow({ plan }: { plan: Plan }) {
         <div className="min-w-0">
           <h3
             style={{
-              fontSize: "var(--text-h4)",
+              fontSize: "var(--text-title-lg)",
               fontWeight: "var(--weight-bold)",
               lineHeight: "var(--leading-snug)",
             }}
           >
             {plan.name}
           </h3>
-          <p className="text-muted" style={{ fontSize: "var(--text-body-sm)" }}>
+          <p className="text-muted" style={{ fontSize: "var(--text-body-md)" }}>
             {formatLong(input.startDate)} – {formatLong(targets.endDate)} ·{" "}
             {formatDays(plan.days)} · goal {formatWeight(plan.lbsToLose)} lb
           </p>
@@ -233,7 +233,7 @@ function Figure({
       className="flex items-baseline justify-between gap-3"
       style={{ marginBottom: last ? 0 : "var(--space-sm)" }}
     >
-      <span className="text-muted" style={{ fontSize: "var(--text-body-sm)" }}>
+      <span className="text-muted" style={{ fontSize: "var(--text-body-md)" }}>
         {label}
       </span>
       <span
@@ -244,7 +244,7 @@ function Figure({
         {unit && value !== "—" && (
           <span
             className="text-muted"
-            style={{ fontSize: "var(--text-body-sm)", marginLeft: "var(--space-2xs)" }}
+            style={{ fontSize: "var(--text-body-md)", marginLeft: "var(--space-2xs)" }}
           >
             {unit}
           </span>

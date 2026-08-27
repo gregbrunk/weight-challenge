@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PasswordChange } from "@/components/password-change";
+import { ThemePicker } from "@/components/theme-picker";
 import { TimezonePicker } from "@/components/timezone-picker";
 import { getSettings } from "@/lib/settings";
 import { allTimeZones, DEFAULT_TIME_ZONE, isValidTimeZone } from "@/lib/timezone";
@@ -34,6 +35,20 @@ export default async function SettingsPage() {
           }
         >
           <TimezonePicker current={current} allZones={allTimeZones()} />
+        </Section>
+
+        <Section
+          id="appearance"
+          title="Appearance"
+          description={
+            <>
+              Light or dark, or whatever the device is already set to. This one is
+              per-device rather than app-wide — the phone on the nightstand and the
+              laptop don&apos;t want the same answer.
+            </>
+          }
+        >
+          <ThemePicker />
         </Section>
 
         <Section
@@ -82,7 +97,7 @@ function Section({
       <h2
         id={`${id}-heading`}
         style={{
-          fontSize: "var(--text-h4)",
+          fontSize: "var(--text-title-lg)",
           fontWeight: "var(--weight-bold)",
           lineHeight: "var(--leading-snug)",
         }}
@@ -91,7 +106,7 @@ function Section({
       </h2>
       <p
         className="text-muted"
-        style={{ fontSize: "var(--text-body-sm)", marginBottom: "var(--space-lg)" }}
+        style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
       >
         {description}
       </p>

@@ -249,7 +249,7 @@ function Meter({
         <div className="meter">
           <div className="meter-fill meter-fill-neutral" style={{ width: "0%" }} />
         </div>
-        <p className="text-muted" style={{ fontSize: "var(--text-body-sm)", marginTop: "var(--space-2xs)" }}>
+        <p className="text-muted" style={{ fontSize: "var(--text-body-md)", marginTop: "var(--space-2xs)" }}>
           Not logged
         </p>
       </div>
@@ -298,7 +298,7 @@ function Meter({
 
       <p
         className={met ? "text-success" : mode === "ceiling" ? "text-danger" : "text-warning"}
-        style={{ fontSize: "var(--text-body-sm)", marginTop: "var(--space-2xs)" }}
+        style={{ fontSize: "var(--text-body-md)", marginTop: "var(--space-2xs)" }}
       >
         {met ? "✓ " : "• "}
         {note}
@@ -342,7 +342,7 @@ function MetricTile({
         {unit && value !== EM_DASH && (
           <span
             className="text-muted"
-            style={{ fontSize: "var(--text-body-sm)", marginLeft: "var(--space-2xs)" }}
+            style={{ fontSize: "var(--text-body-md)", marginLeft: "var(--space-2xs)" }}
           >
             {unit}
           </span>
