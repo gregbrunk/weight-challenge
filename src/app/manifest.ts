@@ -19,10 +19,13 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    // Matches the light theme's surface, so the splash doesn't flash white
-    // against a sage icon.
-    background_color: "#ffffff",
-    theme_color: "#4f6f52",
+    // Both are the light theme's canvas, matching the <meta name="theme-color">
+    // in the root layout. They drive the splash screen and the task-switcher
+    // chrome, which the app itself never paints — so they are the one place a
+    // palette change can be missed and only show up on a home-screen launch.
+    // These were still the old sage accent after the move to Material.
+    background_color: "#f7f6fd",
+    theme_color: "#f7f6fd",
     icons: [
       {
         src: "/icon-192.png",

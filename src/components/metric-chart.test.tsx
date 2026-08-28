@@ -90,6 +90,19 @@ const weightSeries = [
   { key: "weight" as const, label: "Weight", className: "series-weight" },
 ];
 
+function bp(
+  date: string,
+  systolic: number | null,
+  diastolic: number | null,
+): import("@/lib/calc").EntryInput {
+  return { ...entry(date, null), systolic, diastolic };
+}
+
+const bpSeries = [
+  { key: "systolic" as const, label: "Systolic", className: "series-systolic" },
+  { key: "diastolic" as const, label: "Diastolic", className: "series-diastolic" },
+];
+
 describe("MetricChart", () => {
   it("renders without throwing", () => {
     render(<MetricChart title="Weight" rows={rowsWithGap} series={weightSeries} />);
@@ -184,6 +197,69 @@ describe("MetricChart", () => {
     expect(
       container.querySelector(".chart-line.series-weight .recharts-curve"),
     ).toBeTruthy();
+  });
+
+  /**
+   * A single reading with no logged day either side produces a path of one
+   * point. That path is zero-length — "M238,27Z" — so with dots off it paints
+   * nothing, and a chart you have just logged a measurement into comes up
+   * blank. This is what the Blood pressure chart was doing.
+   */
+  it("shows a lone reading that has no line to draw", () => {
+    const single = buildChartRows(plan, [bp("2026-08-06", 130, 80)], "2026-08-09");
+    const { container } = render(
+      <MetricChart title="Blood pressure" rows={single} series={bpSeries} decimals={0} />,
+    );
+
+    const path = container.querySelector(
+      ".chart-line.series-systolic .recharts-curve",
+    );
+    // The path really is zero-length; the dot is what makes the reading visible.
+    expect(path?.getAttribute("d") ?? "").toMatch(/^M[\d.,]+Z?$/);
+
+    const dot = container.querySelector("circle.chart-dot.series-systolic");
+    expect(dot).toBeTruthy();
+  });
+
+  it("marks both series when only one day is logged", () => {
+    const single = buildChartRows(plan, [bp("2026-08-06", 130, 80)], "2026-08-09");
+    const { container } = render(
+      <MetricChart title="Blood pressure" rows={single} series={bpSeries} decimals={0} />,
+    );
+
+    expect(container.querySelector("circle.chart-dot.series-systolic")).toBeTruthy();
+    expect(container.querySelector("circle.chart-dot.series-diastolic")).toBeTruthy();
+  });
+
+  /** Dots are for rescuing invisible points, not for decorating every day. */
+  it("draws no dots when the readings already form a line", () => {
+    const pair = buildChartRows(
+      plan,
+      [bp("2026-08-06", 130, 80), bp("2026-08-07", 128, 79)],
+      "2026-08-09",
+    );
+    const { container } = render(
+      <MetricChart title="Blood pressure" rows={pair} series={bpSeries} decimals={0} />,
+    );
+
+    expect(container.querySelectorAll("circle.chart-dot.series-systolic")).toHaveLength(0);
+  });
+
+  /**
+   * Two readings with a gap between them are two isolated points, not a line —
+   * connectNulls is off, so neither has a neighbour to join.
+   */
+  it("marks each side of a gap that is too wide to bridge", () => {
+    const split = buildChartRows(
+      plan,
+      [bp("2026-08-05", 132, 82), bp("2026-08-09", 126, 78)],
+      "2026-08-09",
+    );
+    const { container } = render(
+      <MetricChart title="Blood pressure" rows={split} series={bpSeries} decimals={0} />,
+    );
+
+    expect(container.querySelectorAll("circle.chart-dot.series-systolic")).toHaveLength(2);
   });
 
   it("renders the frame even when every value is null", () => {

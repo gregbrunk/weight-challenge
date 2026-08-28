@@ -1259,8 +1259,11 @@ circle.chart-dot.series-systolic {
 circle.chart-dot.series-diastolic {
   fill: var(--chart-diastolic);
 }
+/* The halo is the surface the chart is drawn on, which is the CARD, not the
+   page canvas behind it — --color-surface is the tinted canvas and would ring
+   every dot in the wrong colour. */
 circle.chart-dot {
-  stroke: var(--color-surface);
+  stroke: var(--color-card);
   stroke-width: 2;
 }
 

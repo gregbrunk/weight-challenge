@@ -13,6 +13,45 @@ import type { ChartRow } from "@/lib/chart-data";
 import { paddedDomain, tickInterval } from "@/lib/chart-data";
 import { EM_DASH } from "@/lib/format";
 
+/** Props Recharts hands a custom dot renderer. Only these are read. */
+interface DotProps {
+  cx?: number;
+  cy?: number;
+  index?: number;
+}
+
+function valueAt(rows: ChartRow[], index: number, key: keyof ChartRow): number | null {
+  if (index < 0 || index >= rows.length) return null;
+  const value = rows[index][key];
+  return typeof value === "number" ? value : null;
+}
+
+/**
+ * Draws a dot only where a line has nothing to connect to.
+ *
+ * A single reading with no logged day either side produces a path of one
+ * point, which is zero-length and therefore invisible: `d` comes out as
+ * "M238,27Z" and paints nothing. With dots off, logging one measurement and
+ * then finding an empty chart reads as the app having lost it.
+ *
+ * Dots stay off everywhere else on purpose. Over a 93-day plan a dot per day
+ * is noise, and the line already says where the readings are.
+ */
+function isolatedDot(rows: ChartRow[], key: keyof ChartRow, className: string) {
+  return function IsolatedDot({ cx, cy, index }: DotProps) {
+    if (cx === undefined || cy === undefined || index === undefined) return <g />;
+    if (valueAt(rows, index, key) === null) return <g />;
+
+    // A neighbour that is missing, unlogged, or off the end of the plan all
+    // mean the same thing here: this point has nobody to draw a line to.
+    const alone =
+      valueAt(rows, index - 1, key) === null && valueAt(rows, index + 1, key) === null;
+    if (!alone) return <g />;
+
+    return <circle cx={cx} cy={cy} r={3.5} className={`chart-dot ${className}`} />;
+  };
+}
+
 export interface ChartSeries {
   /** Which field of the row to plot. */
   key: keyof ChartRow;
@@ -158,7 +197,7 @@ export function MetricChart({
                 dataKey={String(entry.key)}
                 className={`chart-line ${entry.className}`}
                 strokeWidth={2}
-                dot={false}
+                dot={isolatedDot(rows, entry.key, entry.className)}
                 activeDot={{ r: 4, className: `chart-dot ${entry.className}` }}
                 isAnimationActive={false}
                 // The load-bearing prop: a day without a reading is a gap, not
