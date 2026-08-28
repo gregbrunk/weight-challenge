@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { SLOT_LABELS, type PhotoSummary } from "@/lib/photos/slots";
 import { formatShort, formatWithWeekday, type PlainDate } from "@/lib/date";
+import { PhotoViewer, type ViewerPhoto } from "./photo-viewer";
 
 export interface TimelineDay {
   date: PlainDate;
@@ -16,36 +17,34 @@ export interface TimelineDay {
  * A horizontal strip rather than a grid: the comparison you actually want is
  * one date against another, and a strip keeps a day's three angles together as
  * a unit. Tapping any photo opens it full size.
+ *
+ * Paging inside the viewer stays within the day you opened, so Previous and
+ * Next move between that day's angles rather than wandering off into another
+ * date's photos.
  */
 export function PhotoTimeline({ days }: { days: TimelineDay[] }) {
   const [viewing, setViewing] = useState<{ day: TimelineDay; index: number } | null>(
     null,
   );
-  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const open = useCallback((day: TimelineDay, index: number) => {
     setViewing({ day, index });
-    // showModal gives us the focus trap, the backdrop and Escape-to-close for
-    // free, which is a lot of correctness not to have to hand-roll.
-    dialogRef.current?.showModal();
   }, []);
 
-  const close = useCallback(() => {
-    dialogRef.current?.close();
-    setViewing(null);
-  }, []);
+  const close = useCallback(() => setViewing(null), []);
 
-  const step = useCallback(
-    (delta: number) => {
-      setViewing((current) => {
-        if (!current) return current;
-        const next = current.index + delta;
-        if (next < 0 || next >= current.day.photos.length) return current;
-        return { ...current, index: next };
-      });
-    },
+  const onIndexChange = useCallback(
+    (index: number) => setViewing((current) => (current ? { ...current, index } : current)),
     [],
   );
+
+  const viewable: ViewerPhoto[] =
+    viewing?.day.photos.map((photo) => ({
+      id: photo.id,
+      slot: photo.slot,
+      date: viewing.day.date,
+      dayNumber: viewing.day.dayNumber,
+    })) ?? [];
 
   return (
     <>
@@ -70,7 +69,7 @@ export function PhotoTimeline({ days }: { days: TimelineDay[] }) {
                   type="button"
                   className="photo-timeline-frame"
                   onClick={() => open(day, index)}
-                  style={{ padding: 0, border: "1px solid var(--color-outline-variant)", cursor: "pointer" }}
+                  aria-label={`View ${SLOT_LABELS[photo.slot]} photo from ${formatWithWeekday(day.date)} full size`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -86,52 +85,12 @@ export function PhotoTimeline({ days }: { days: TimelineDay[] }) {
         ))}
       </div>
 
-      <dialog ref={dialogRef} className="photo-viewer" onClose={close}>
-        {viewing && (
-          <div className="photo-viewer-inner">
-            <div className="photo-viewer-header">
-              <p className="label-caps">
-                {formatWithWeekday(viewing.day.date)} · Day {viewing.day.dayNumber} ·{" "}
-                {SLOT_LABELS[viewing.day.photos[viewing.index].slot]}
-              </p>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={close}>
-                Close
-              </button>
-            </div>
-
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`/api/photos/${viewing.day.photos[viewing.index].id}`}
-              alt={`${SLOT_LABELS[viewing.day.photos[viewing.index].slot]} progress photo, ${formatWithWeekday(viewing.day.date)}`}
-              className="photo-viewer-image"
-            />
-
-            {viewing.day.photos.length > 1 && (
-              <div className="photo-viewer-nav">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => step(-1)}
-                  disabled={viewing.index === 0}
-                >
-                  Previous
-                </button>
-                <span className="label-caps">
-                  {viewing.index + 1} of {viewing.day.photos.length}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => step(1)}
-                  disabled={viewing.index === viewing.day.photos.length - 1}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </dialog>
+      <PhotoViewer
+        photos={viewable}
+        index={viewing?.index ?? null}
+        onClose={close}
+        onIndexChange={onIndexChange}
+      />
     </>
   );
 }

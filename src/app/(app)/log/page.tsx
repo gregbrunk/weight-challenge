@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AutosaveField } from "@/components/autosave-field";
 import { DateNav } from "@/components/date-nav";
-import { PhotoSlot } from "@/components/photo-slot";
+import { PhotoSlotGroup } from "@/components/photo-slot-group";
 import { TaskChecklist, type ChecklistTask } from "@/components/task-checklist";
 import { getPhotosForDate, PHOTO_SLOTS, SLOT_LABELS } from "@/lib/photos";
 import { getTaskContext, toTaskInput } from "@/lib/tasks";
@@ -72,6 +72,10 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
 
   const value = (raw: number | null | undefined) => numberToInputValue(raw ?? null);
 
+  // One source for the day number: the header and the photo viewer's caption
+  // must never disagree about which day of the plan this is.
+  const dayNumber = daysBetween(planInput.startDate, date) + 1;
+
   return (
     <>
       <header style={{ marginBottom: "var(--space-lg)" }}>
@@ -85,7 +89,7 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
         planStart={planInput.startDate}
         planEnd={targets.endDate}
         today={today}
-        dayNumber={daysBetween(planInput.startDate, date) + 1}
+        dayNumber={dayNumber}
         totalDays={plan.days}
       />
 
@@ -195,20 +199,19 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
             style={{ fontSize: "var(--text-body-md)", marginBottom: "var(--space-lg)" }}
           >
             Optional, any day you feel like it. Photos are resized on your phone
-            before they upload, so the originals stay on your device.
+            before they upload, so the originals stay on your device. Tap one to
+            see it full size, or to download the copy stored here.
           </p>
 
-          <div className="photo-grid">
-            {PHOTO_SLOTS.map((slot) => (
-              <PhotoSlot
-                key={slot}
-                date={date}
-                slot={slot}
-                label={SLOT_LABELS[slot]}
-                photoId={photos.find((photo) => photo.slot === slot)?.id ?? null}
-              />
-            ))}
-          </div>
+          <PhotoSlotGroup
+            date={date}
+            dayNumber={dayNumber}
+            slots={PHOTO_SLOTS.map((slot) => ({
+              slot,
+              label: SLOT_LABELS[slot],
+              photoId: photos.find((photo) => photo.slot === slot)?.id ?? null,
+            }))}
+          />
         </section>
       </div>
     </>

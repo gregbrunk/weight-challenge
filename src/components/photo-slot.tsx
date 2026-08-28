@@ -12,6 +12,16 @@ interface Props {
   label: string;
   /** Existing photo id, if this slot is already filled. */
   photoId: string | null;
+  /**
+   * Bumped by the parent whenever this slot's photo changes, so the <img>
+   * refetches. Replacing a photo reuses its row and therefore its id, so the
+   * URL has to change or the browser serves the file that was just replaced.
+   */
+  version: number;
+  /** Reports the slot's current photo id, or null once it is emptied. */
+  onPhotoChange: (slot: SlotName, id: string | null) => void;
+  /** Asks the parent to open this slot in the shared viewer. */
+  onView: (slot: SlotName) => void;
 }
 
 type State =
@@ -29,16 +39,24 @@ type State =
  *
  * The image is downsized in the browser before it is sent, so the original
  * never leaves the device and the upload finishes quickly on a phone.
+ *
+ * The viewer lives in the parent rather than here, so that opening one photo
+ * can page through the day's others.
  */
-export function PhotoSlot({ date, slot, label, photoId }: Props) {
+export function PhotoSlot({
+  date,
+  slot,
+  label,
+  photoId,
+  version,
+  onPhotoChange,
+  onView,
+}: Props) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<State>(
     photoId ? { status: "filled", id: photoId } : { status: "empty" },
   );
-  // Changes on every successful upload so the <img> refetches rather than
-  // showing the replaced photo from cache.
-  const [version, setVersion] = useState(0);
 
   const currentId =
     state.status === "filled" ? state.id : state.status === "error" ? state.id : null;
@@ -62,7 +80,7 @@ export function PhotoSlot({ date, slot, label, photoId }: Props) {
 
       if (result.ok) {
         setState({ status: "filled", id: result.photo.id });
-        setVersion((current) => current + 1);
+        onPhotoChange(slot, result.photo.id);
       } else {
         setState({ status: "error", message: result.error, id: currentId });
       }
@@ -92,6 +110,8 @@ export function PhotoSlot({ date, slot, label, photoId }: Props) {
         ? { status: "empty" }
         : { status: "error", message: result.error, id: currentId },
     );
+
+    if (result.ok) onPhotoChange(slot, null);
   }
 
   const busy = state.status === "working";
@@ -100,17 +120,29 @@ export function PhotoSlot({ date, slot, label, photoId }: Props) {
     <div className="photo-slot">
       <div className="photo-frame">
         {currentId ? (
-          /* next/image is not usable here: its optimizer fetches the source
-             itself and has no session, so an authenticated route always 404s
-             for it. The image is already downsized to 1600px on the client. */
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/api/photos/${currentId}?v=${version}`}
-            alt={`${label} progress photo`}
-            className="photo-image"
-            loading="lazy"
-            decoding="async"
-          />
+          /* The photo is a button, not a bare image: tapping it opens the
+             viewer, which means the affordance is keyboard-reachable and
+             announced rather than being a click handler on an <img>. */
+          <button
+            type="button"
+            className="photo-frame-view"
+            onClick={() => onView(slot)}
+            disabled={busy}
+            aria-label={`View ${label} photo full size`}
+          >
+            {/* next/image is not usable here: its optimizer fetches the source
+                itself and has no session, so an authenticated route always
+                404s for it. The image is already downsized to 1600px on the
+                client. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/photos/${currentId}?v=${version}`}
+              alt={`${label} progress photo`}
+              className="photo-image"
+              loading="lazy"
+              decoding="async"
+            />
+          </button>
         ) : (
           <span className="photo-placeholder" aria-hidden="true">
             +

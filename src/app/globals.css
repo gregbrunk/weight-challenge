@@ -938,6 +938,21 @@ label.task-control:active::after {
   justify-content: center;
 }
 
+/* The whole frame is the target, so the photo is as easy to open as it looks. */
+.photo-frame-view {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.photo-frame-view:disabled {
+  cursor: default;
+}
+
 .photo-image {
   width: 100%;
   height: 100%;
@@ -1076,6 +1091,17 @@ input[type="file"]:focus-visible + .photo-actions .photo-choose {
   object-fit: contain;
   border-radius: var(--radius-md);
   background: var(--color-emphasis);
+}
+
+/* Paging on the left, Download on the right. When there is only one photo the
+   nav collapses to an empty span so Download stays put rather than sliding
+   across as you move between days. */
+.photo-viewer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
 }
 
 .photo-viewer-nav {
