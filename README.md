@@ -1,11 +1,8 @@
 # Weight Challenge
 
-A mobile-first web app for running a weight-loss plan, replacing the "2026
-Challenge" Numbers spreadsheet it was modelled on.
+An app designed to let you lose a specified amount of weight in a specified amount of time. Set a plan, log measurements as they come in throughout the day, and watch the calorie deficit burn down against the pace needed to finish on target.
 
-Single user, single password. Set a plan, log measurements as they arrive
-through the day, and watch the calorie deficit burn down against the pace that
-finishes on target.
+A mobile-first web app for running a math-based weight-loss plan, based on a spreadsheet I made many years ago. The app is for a single user with a single password, and has no account system. It is equipped with brute-force prevention.
 
 ## What it does
 
