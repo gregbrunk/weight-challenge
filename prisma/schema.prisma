@@ -44,12 +44,12 @@ model Plan {
   // --- Baseline measurements ----------------------------------------------
   // All optional: you may not have a VO2 max or a blood pressure cuff on day
   // one, and the app degrades to "—" rather than refusing to start.
-  startWeight     Float?
+  startWeight    Float?
   /// Fraction, not percent: 0.299 renders as 29.9%.
-  startBodyFat    Float?
-  startVo2Max     Float?
-  startSystolic   Int?
-  startDiastolic  Int?
+  startBodyFat   Float?
+  startVo2Max    Float?
+  startSystolic  Int?
+  startDiastolic Int?
 
   entries DailyEntry[]
   photos  Photo[]
@@ -157,9 +157,9 @@ model Task {
   planId String
   plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
 
-  name String
+  name     String
   /// Display order on the Log and Progress screens.
-  position Int @default(0)
+  position Int    @default(0)
 
   autoRule TaskAutoRule @default(manual)
 
@@ -193,4 +193,29 @@ model TaskCompletion {
 
   @@unique([taskId, date])
   @@index([taskId, date])
+}
+
+/// Failed unlock attempts, per client.
+///
+/// The unlock screen used to lean on scrypt's ~100ms cost as its only brake,
+/// which slows one attacker running one guess at a time and does very little
+/// against fifty parallel requests. This is the counter that reasoning said
+/// was impossible — it was, in memory on a serverless instance, but this app
+/// has one shared database and a row in it survives everything.
+///
+/// Counted per client rather than globally: a single global counter would let
+/// anyone reaching the page lock the owner out by failing on purpose.
+model UnlockAttempt {
+  /// HMAC of the client address with the session secret. The address itself is
+  /// never stored, so this table cannot be read back into a list of visitors.
+  clientKey String @id
+
+  failures       Int       @default(0)
+  firstFailureAt DateTime  @default(now())
+  lockedUntil    DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  /// Supports pruning rows nothing is waiting on.
+  @@index([updatedAt])
 }

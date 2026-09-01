@@ -39,8 +39,17 @@ Break these and things go subtly wrong rather than loudly wrong.
 
 ## Deployment facts
 
-- **Production:** <https://weight-challenge-black.vercel.app> — Vercel, auto-
-  deploys from `main` on GitHub (`gregbrunk/weight-challenge`).
+- **Production:** the URL is `APP_PRODUCTION_URL` in `.env`, not written down
+  here — this repo is public and a personal deployment shouldn't be advertised
+  in it. `.env.example` documents the key. On Vercel the platform exposes the
+  same value as `VERCEL_PROJECT_PRODUCTION_URL` at build and runtime, so
+  nothing needs to hardcode it. Hosting is Vercel, auto-deploying from `main`
+  on GitHub (`gregbrunk/weight-challenge`).
+
+  To check a deploy has landed, poll something public that the commit actually
+  changed — `/manifest.webmanifest` works and is served without a session.
+  Probing an authenticated page for a string only visible after login reports a
+  failure that never happened.
 - **The database is shared between local development and production.** One Neon
   instance. Running `npm run db:migrate` locally applies to production, and
   local dev reads and writes Greg's real data. There is no separate dev

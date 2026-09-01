@@ -16,7 +16,8 @@
     "db:check": "node scripts/db-check.mjs",
     "db:reset": "node scripts/db-reset.mjs",
     "icons": "node scripts/generate-icons.mjs",
-    "check:contrast": "node scripts/check-contrast.mjs"
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
