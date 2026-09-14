@@ -52,10 +52,18 @@ Break these and things go subtly wrong rather than loudly wrong.
   nothing needs to hardcode it. Hosting is Vercel, auto-deploying from `main`
   on GitHub (`gregbrunk/weight-challenge`).
 
-  To check a deploy has landed, poll something public that the commit actually
-  changed — `/manifest.webmanifest` works and is served without a session.
-  Probing an authenticated page for a string only visible after login reports a
-  failure that never happened.
+  To check a deploy has landed, read Vercel's status for the commit from
+  GitHub — the repo is public, so no token is needed:
+
+      curl -s https://api.github.com/repos/gregbrunk/weight-challenge/commits/<sha>/status
+
+  `state: success` with the Vercel context means it is live. Two probes that
+  looked reasonable and were wrong: polling an authenticated page for a string
+  only visible after login (reports failure forever), and watching a `_next`
+  chunk hash on the unlock page for a change (chunks are content-hashed, so a
+  commit that doesn't touch that chunk leaves the name identical — reports
+  failure forever too). Polling `/manifest.webmanifest` works only when the
+  commit changed it.
 - **The database is shared between local development and production.** One Neon
   instance. Running `npm run db:migrate` locally applies to production, and
   local dev reads and writes Greg's real data. There is no separate dev
