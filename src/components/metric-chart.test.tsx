@@ -142,7 +142,12 @@ describe("MetricChart", () => {
     expect(group?.querySelector(".recharts-curve")).toBeTruthy();
   });
 
-  it("breaks the line at an unlogged day instead of drawing through it", () => {
+  /**
+   * Unlogged days are bridged. Blood pressure and VO2 max are measured every
+   * few days at most, and a line broken at every unmeasured day is mostly
+   * gaps. A single move command means one continuous path across the gap.
+   */
+  it("draws through an unlogged day rather than breaking the line", () => {
     const { container } = render(
       <MetricChart title="Weight" rows={rowsWithGap} series={weightSeries} />,
     );
@@ -150,11 +155,17 @@ describe("MetricChart", () => {
     const path = container.querySelector(".chart-line.series-weight .recharts-curve");
     const d = path?.getAttribute("d") ?? "";
 
-    // A broken line restarts with a fresh move command. One "M" would mean
-    // Recharts connected straight across the missing day — the exact thing
-    // connectNulls={false} exists to prevent.
-    const moveCommands = d.match(/M/g)?.length ?? 0;
-    expect(moveCommands).toBeGreaterThan(1);
+    expect(d.match(/M/g)?.length ?? 0).toBe(1);
+  });
+
+  /**
+   * Bridging is a drawing decision, not a data one. The unlogged day is still
+   * null in the rows the chart was given, so nothing downstream — the tooltip,
+   * an average, an export — ever sees an invented reading.
+   */
+  it("bridges the drawing without inventing a value for the missing day", () => {
+    const missing = rowsWithGap.find((row) => row.label === "Aug 7");
+    expect(missing?.weight).toBeNull();
   });
 
   it("draws one continuous line when nothing is missing", () => {
@@ -246,10 +257,10 @@ describe("MetricChart", () => {
   });
 
   /**
-   * Two readings with a gap between them are two isolated points, not a line —
-   * connectNulls is off, so neither has a neighbour to join.
+   * Two readings four days apart are joined by a line, so neither needs a dot
+   * to be seen. The dot is only for a series with one reading in total.
    */
-  it("marks each side of a gap that is too wide to bridge", () => {
+  it("joins readings across a wide gap with a line, not dots", () => {
     const split = buildChartRows(
       plan,
       [bp("2026-08-05", 132, 82), bp("2026-08-09", 126, 78)],
@@ -259,7 +270,12 @@ describe("MetricChart", () => {
       <MetricChart title="Blood pressure" rows={split} series={bpSeries} decimals={0} />,
     );
 
-    expect(container.querySelectorAll("circle.chart-dot.series-systolic")).toHaveLength(2);
+    const d =
+      container
+        .querySelector(".chart-line.series-systolic .recharts-curve")
+        ?.getAttribute("d") ?? "";
+    expect(d).toMatch(/L|C/); // a real segment, not a single point
+    expect(container.querySelectorAll("circle.chart-dot.series-systolic")).toHaveLength(0);
   });
 
   it("renders the frame even when every value is null", () => {

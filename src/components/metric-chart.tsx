@@ -27,26 +27,24 @@ function valueAt(rows: ChartRow[], index: number, key: keyof ChartRow): number |
 }
 
 /**
- * Draws a dot only where a line has nothing to connect to.
+ * Draws a dot only when the series has a single reading.
  *
- * A single reading with no logged day either side produces a path of one
- * point, which is zero-length and therefore invisible: `d` comes out as
- * "M238,27Z" and paints nothing. With dots off, logging one measurement and
- * then finding an empty chart reads as the app having lost it.
+ * Lines connect across unlogged days, so any two readings draw something. One
+ * reading cannot: Recharts emits a path of one point, which is zero-length and
+ * invisible — `d` comes out as "M238,27Z" and paints nothing. With dots off,
+ * logging your first measurement and finding an empty chart reads as the app
+ * having lost it.
  *
  * Dots stay off everywhere else on purpose. Over a 93-day plan a dot per day
  * is noise, and the line already says where the readings are.
  */
-function isolatedDot(rows: ChartRow[], key: keyof ChartRow, className: string) {
-  return function IsolatedDot({ cx, cy, index }: DotProps) {
+function loneReadingDot(rows: ChartRow[], key: keyof ChartRow, className: string) {
+  const logged = rows.filter((row) => typeof row[key] === "number").length;
+
+  return function LoneReadingDot({ cx, cy, index }: DotProps) {
+    if (logged !== 1) return <g />;
     if (cx === undefined || cy === undefined || index === undefined) return <g />;
     if (valueAt(rows, index, key) === null) return <g />;
-
-    // A neighbour that is missing, unlogged, or off the end of the plan all
-    // mean the same thing here: this point has nobody to draw a line to.
-    const alone =
-      valueAt(rows, index - 1, key) === null && valueAt(rows, index + 1, key) === null;
-    if (!alone) return <g />;
 
     return <circle cx={cx} cy={cy} r={3.5} className={`chart-dot ${className}`} />;
   };
@@ -197,12 +195,15 @@ export function MetricChart({
                 dataKey={String(entry.key)}
                 className={`chart-line ${entry.className}`}
                 strokeWidth={2}
-                dot={isolatedDot(rows, entry.key, entry.className)}
+                dot={loneReadingDot(rows, entry.key, entry.className)}
                 activeDot={{ r: 4, className: `chart-dot ${entry.className}` }}
                 isAnimationActive={false}
-                // The load-bearing prop: a day without a reading is a gap, not
-                // a straight line implying progress that was never measured.
-                connectNulls={false}
+                // Unlogged days are bridged rather than left as gaps. Blood
+                // pressure and VO2 max are measured every few days at most, and
+                // a line broken at every unmeasured day is mostly gaps. The
+                // DATA is untouched — the day is still null and the tooltip
+                // still shows an em dash for it. Only the drawing connects.
+                connectNulls
               />
             ))}
           </LineChart>

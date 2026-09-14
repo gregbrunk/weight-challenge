@@ -29,10 +29,12 @@ export interface PlanFormValues {
 interface Props {
   mode: "create" | "edit";
   planId?: string;
+  /** Restarting: the plan whose tasks the new one should begin with. */
+  sourcePlanId?: string;
   initialValues: PlanFormValues;
 }
 
-export function PlanForm({ mode, planId, initialValues }: Props) {
+export function PlanForm({ mode, planId, sourcePlanId, initialValues }: Props) {
   const action = mode === "create" ? createPlanAction : updatePlanAction;
   const [state, formAction] = useActionState<PlanFormState, FormData>(
     action,
@@ -49,6 +51,7 @@ export function PlanForm({ mode, planId, initialValues }: Props) {
   return (
     <form action={formAction} className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
       {planId && <input type="hidden" name="id" value={planId} />}
+      {sourcePlanId && <input type="hidden" name="from" value={sourcePlanId} />}
 
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         {state.message && (

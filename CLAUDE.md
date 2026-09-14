@@ -18,9 +18,15 @@ Break these and things go subtly wrong rather than loudly wrong.
   deficits, progress, projections. No screen computes its own. It is verified
   against the original spreadsheet's own figures in `calc.test.ts` — if those
   tests fail, the app no longer matches the sheet it replaced.
-- **Missing values are gaps, never zeros.** In charts (`connectNulls={false}`),
-  in averages, and on screen (em dash). A day with no weight is unlogged, not a
-  day you weighed nothing. Every measurement column is nullable for this reason.
+- **Missing values are gaps, never zeros.** In averages, in exports, and on
+  screen (em dash). A day with no weight is unlogged, not a day you weighed
+  nothing. Every measurement column is nullable for this reason.
+
+  Charts are the one place the *drawing* bridges a gap: `connectNulls` is on,
+  because blood pressure and VO2 max are measured every few days at most and a
+  line broken at every unmeasured day is mostly gaps. The data is untouched —
+  the day is still null, the tooltip still shows an em dash for it. Greg asked
+  for this deliberately (Sep 2026); don't "fix" it back to `false`.
 - **Dates are calendar days, not instants.** `src/lib/date.ts` uses
   `YYYY-MM-DD` strings pinned to UTC noon. Never `new Date()` arithmetic.
 - **"Today" comes from the app's timezone setting**, not the server or the
@@ -97,6 +103,8 @@ Each of these cost real time. They are fixed, but they recur if you undo them.
 
 ## User preferences
 
-- Sage green accent, not the design system's fuchsia. Contrast values in
-  `src/app/tokens.css` are measured, not eyeballed; re-measure if you change one.
+- The design system is Material (the `material-ui` skill), violet primary. The
+  earlier sage-green preference applied to the previous system and is retired.
+  Contrast values in `src/app/tokens.css` are measured, not eyeballed;
+  `npm run check:contrast` re-measures every pair — run it after changing one.
 - Mountain Time.

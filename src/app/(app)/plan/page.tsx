@@ -145,6 +145,9 @@ export default async function PlanPage() {
         <Link href={`/plan/${plan.id}/edit`} className="btn btn-secondary">
           Edit plan
         </Link>
+        <Link href={`/plan/new?from=${plan.id}`} className="btn btn-secondary">
+          Restart plan
+        </Link>
         <Link href="/plan/new" className="btn btn-secondary">
           Start a new plan
         </Link>
@@ -206,12 +209,19 @@ function ArchivedPlanRow({ plan }: { plan: Plan }) {
           </p>
         </div>
 
-        <form action={activatePlanAction}>
-          <input type="hidden" name="id" value={plan.id} />
-          <button type="submit" className="btn btn-secondary btn-sm">
-            Make current
-          </button>
-        </form>
+        <div className="flex flex-wrap gap-2">
+          <form action={activatePlanAction}>
+            <input type="hidden" name="id" value={plan.id} />
+            <button type="submit" className="btn btn-secondary btn-sm">
+              Make current
+            </button>
+          </form>
+          {/* A link, not a form: nothing happens until the prefilled form is
+              submitted, so there is nothing here to confirm. */}
+          <Link href={`/plan/new?from=${plan.id}`} className="btn btn-secondary btn-sm">
+            Restart plan
+          </Link>
+        </div>
       </div>
     </li>
   );

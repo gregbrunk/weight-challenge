@@ -68,7 +68,10 @@ export async function createPlanAction(
     return { errors: fieldErrors(parsed.error), message: "Check the fields below." };
   }
 
-  await createPlan(toFields(parsed));
+  // Present only when restarting an earlier plan; it brings the tasks along.
+  const from = String(formData.get("from") ?? "");
+
+  await createPlan(toFields(parsed), from ? { copyTasksFrom: from } : {});
 
   revalidatePath("/", "layout");
   redirect("/today");
