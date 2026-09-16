@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FastingWeekChart, type FastingWeekView } from "@/components/fasting-week-chart";
 import { MetricChart } from "@/components/metric-chart";
 import { PhotoTimeline, type TimelineDay } from "@/components/photo-timeline";
 import { StreakCard, type StreakCardTask } from "@/components/streak-card";
 import { getTaskContext, toTaskInput } from "@/lib/tasks";
 import { AUTO_RULE_LABELS, computeTaskStats, taskCalendar } from "@/lib/streaks";
-import { planProgress, type MetricProgress } from "@/lib/calc";
+import { fastingPlanLabel, planProgress, type MetricProgress } from "@/lib/calc";
+import {
+  fastingBars,
+  fastingStats,
+  fastingWeek,
+  fastingWeekBounds,
+  fastingWeekLabel,
+  type FastingStats,
+} from "@/lib/fasting";
 import { buildChartRows, hasData } from "@/lib/chart-data";
-import { daysBetween, formatLong } from "@/lib/date";
+import { addDays, compareDates, daysBetween, formatLong } from "@/lib/date";
 import {
   EM_DASH,
   formatCalories,
@@ -17,6 +26,7 @@ import {
   formatSigned,
   formatSignedCalories,
   formatWeight,
+  formatDuration,
 } from "@/lib/format";
 import { getPhotosForPlan } from "@/lib/photos";
 import { getActivePlan, getEntryInputs, toPlanInput } from "@/lib/plans";
@@ -38,6 +48,32 @@ export default async function ProgressPage() {
     getPhotosForPlan(plan.id),
     getTaskContext(plan.id),
   ]);
+
+  // Every week from the plan's start through the one holding today. A plan is
+  // a few dozen weeks at most, so handing them all to the client costs less
+  // than a round trip per step between them.
+  const fasting = fastingStats(planInput, taskContext.entriesByDate, today);
+  const fastingWeeks: FastingWeekView[] =
+    planInput.fastingPlan === null ? [] : buildFastingWeeks();
+
+  function buildFastingWeeks(): FastingWeekView[] {
+    const bounds = fastingWeekBounds(planInput, today);
+    const views: FastingWeekView[] = [];
+
+    for (
+      let start = bounds.earliest;
+      compareDates(start, bounds.latest) <= 0;
+      start = addDays(start, 7)
+    ) {
+      views.push({
+        start,
+        label: fastingWeekLabel(fastingWeek(planInput, taskContext.entriesByDate, start)),
+        bars: fastingBars(planInput, taskContext.entriesByDate, start),
+      });
+    }
+
+    return views;
+  }
 
   const streakTasks: StreakCardTask[] = taskContext.tasks.map((task) => {
     const input = toTaskInput(task);
@@ -237,6 +273,23 @@ export default async function ProgressPage() {
           )}
         </section>
 
+        {planInput.fastingPlan !== null && fasting !== null && (
+          <section aria-labelledby="fasting-heading">
+            <h2
+              id="fasting-heading"
+              className="label-caps"
+              style={{ marginBottom: "var(--space-md)" }}
+            >
+              Intermittent fasting · {fastingPlanLabel(planInput.fastingPlan)}
+            </h2>
+
+            <div className="flex flex-col" style={{ gap: "var(--space-md)" }}>
+              <FastingWeekChart weeks={fastingWeeks} goalHours={fasting.goalHours} />
+              <FastingFigures stats={fasting} />
+            </div>
+          </section>
+        )}
+
         {/* ---- Charts ---- */}
         <section aria-labelledby="charts-heading">
           <h2 id="charts-heading" className="label-caps" style={{ marginBottom: "var(--space-md)" }}>
@@ -364,6 +417,83 @@ function groupByDate(
  * both but in separate blocks; side by side, drift from a personal best is
  * visible without arithmetic.
  */
+/**
+ * The plan-wide fasting figures.
+ *
+ * Two denominators, deliberately different. The success rate counts only days
+ * that have happened, because a day still ahead of you is not yet a failure.
+ * The hours bar measures against the whole plan, because that is the total the
+ * plan is asking for — it is a burndown, not a score.
+ *
+ * Neither counts the plan's first day: a fast credited to it would have had to
+ * begin before the plan existed, so including it would put a day nobody could
+ * ever satisfy in the denominator.
+ */
+function FastingFigures({ stats }: { stats: FastingStats }) {
+  return (
+    <>
+      <div className="fasting-stats">
+        <FastingStat
+          value={formatDuration(stats.totalHours)}
+          caption="Total fasted"
+        />
+        <FastingStat
+          value={`${stats.daysMet} of ${stats.elapsedDays}`}
+          caption={`Goals met · ${formatPercent(stats.metRate)}`}
+        />
+        <FastingStat
+          value={`${stats.completedFasts} of ${stats.creditableDays}`}
+          caption="Fasts completed"
+        />
+        <FastingStat
+          value={formatDuration(stats.longestFastHours)}
+          caption={
+            stats.averageFastHours === null
+              ? "Longest fast"
+              : `Longest · ${formatDuration(stats.averageFastHours)} average`
+          }
+        />
+      </div>
+
+      <div className="card">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="label-caps">Hours against the plan</p>
+          <p className="numeric" style={{ fontSize: "var(--text-body-md)" }}>
+            {formatDuration(stats.totalHours)} of {formatDuration(stats.requiredHours)}
+          </p>
+        </div>
+
+        <div
+          className="fasting-meter"
+          style={{ marginTop: "var(--space-sm)" }}
+          role="img"
+          aria-label={`${formatPercent(stats.hoursProgress)} of the hours this plan asks for`}
+        >
+          <div
+            className="fasting-meter-fill"
+            data-tone={stats.hoursProgress >= 1 ? "success" : undefined}
+            style={{ width: `${Math.round(stats.hoursProgress * 100)}%` }}
+          />
+        </div>
+
+        <p className="fasting-stat-caption">
+          {stats.goalHours}h a day for {formatDays(stats.creditableDays)} of fasting —
+          every day of the plan but its first, which has no evening before it.
+        </p>
+      </div>
+    </>
+  );
+}
+
+function FastingStat({ value, caption }: { value: string; caption: string }) {
+  return (
+    <div className="card">
+      <p className="fasting-stat-value numeric">{value}</p>
+      <p className="fasting-stat-caption">{caption}</p>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   metric,

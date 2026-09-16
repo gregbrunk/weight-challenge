@@ -41,6 +41,8 @@ import {
   compareDates,
   dateRange,
   daysBetween,
+  formatShort,
+  formatWeekday,
   startOfWeek,
   type PlainDate,
 } from "./date";
@@ -327,4 +329,61 @@ export function fastingStats(
     longestFastHours,
     averageFastHours: completedFasts === 0 ? null : totalHours / completedFasts,
   };
+}
+
+// ---------------------------------------------------------------------------
+// The week chart
+// ---------------------------------------------------------------------------
+
+/**
+ * Why a day looks the way it does on the chart.
+ *
+ * `met` and `missed` draw a bar; the rest draw nothing, and the tooltip says
+ * which kind of nothing it is. A day you did not fast is genuinely different
+ * from a day outside the plan, and from one whose fast is still running.
+ */
+export type FastingBarState = "met" | "missed" | "running" | "none" | "outside";
+
+export interface FastingBar {
+  date: PlainDate;
+  /** "Sun" — the axis tick. */
+  weekday: string;
+  /** "Sep 13" — the tooltip's heading. */
+  label: string;
+  /**
+   * Hours fasted, or null to draw no bar at all. Null is the app's usual rule:
+   * a day with no fast is a day nothing was measured, not a day of zero hours.
+   * It still counts as missed in the statistics — see `fastingStats`.
+   */
+  hours: number | null;
+  state: FastingBarState;
+}
+
+/** One Sunday-to-Saturday week, ready to plot. */
+export function fastingBars(
+  plan: PlanInput,
+  entries: EntriesByDate,
+  weekStart: PlainDate,
+): FastingBar[] {
+  return fastingWeek(plan, entries, weekStart).days.map(({ date, fast }) => {
+    const base = { date, weekday: formatWeekday(date), label: formatShort(date) };
+
+    if (fast === null) return { ...base, hours: null, state: "outside" as const };
+    if (fast.status === "running") return { ...base, hours: null, state: "running" as const };
+    if (fast.status === "none" || fast.hours === null) {
+      return { ...base, hours: null, state: "none" as const };
+    }
+
+    return {
+      ...base,
+      // A fast logged backwards would otherwise draw below the axis.
+      hours: Math.max(fast.hours, 0),
+      state: fast.met ? ("met" as const) : ("missed" as const),
+    };
+  });
+}
+
+/** "Sep 13 – Sep 19", for the heading above the chart. */
+export function fastingWeekLabel(week: FastingWeek): string {
+  return `${formatShort(week.start)} – ${formatShort(week.end)}`;
 }
