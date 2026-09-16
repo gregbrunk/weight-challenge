@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DateNav } from "@/components/date-nav";
-import { dayMetrics, planTargets, type EntryInput } from "@/lib/calc";
+import { FastTimer } from "@/components/fast-timer";
+import {
+  dayMetrics,
+  fastingPlanLabel,
+  planTargets,
+  type EntryInput,
+  type PlanInput,
+} from "@/lib/calc";
+import { fastForDay, goalReachedAt } from "@/lib/fasting";
 import { compareDates, daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
 import {
   EM_DASH,
@@ -19,7 +27,8 @@ import {
   getEntryInputs,
   toPlanInput,
 } from "@/lib/plans";
-import { getToday } from "@/lib/timezone-server";
+import { getNow, getTimeZone, getToday } from "@/lib/timezone-server";
+import { formatTimeInZone } from "@/lib/timezone";
 
 export const metadata: Metadata = {
   title: "Today · Weight Challenge",
@@ -40,7 +49,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     targets.endDate,
   );
 
-  const entries = await getEntryInputs(plan.id);
+  // The clock is read once for the whole response, so every part of the page
+  // agrees on when "now" was. The timer takes over ticking on mount.
+  const [entries, timeZone, renderedAt] = await Promise.all([
+    getEntryInputs(plan.id),
+    getTimeZone(),
+    getNow(),
+  ]);
   const entry =
     entries.find((candidate) => candidate.date === date) ?? emptyEntry(date);
   const metrics = dayMetrics(planInput, entry, targets);
@@ -101,6 +116,28 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             mode="floor"
           />
         </section>
+
+        {planInput.fastingPlan !== null && (
+          <section className="card" aria-labelledby="fasting-heading">
+            <h2
+              id="fasting-heading"
+              className="label-caps"
+              style={{ marginBottom: "var(--space-lg)" }}
+            >
+              Intermittent fasting · {fastingPlanLabel(planInput.fastingPlan)}
+            </h2>
+
+            <FastingToday
+              plan={planInput}
+              date={date}
+              entries={entries}
+              entry={entry}
+              timeZone={timeZone}
+              isToday={date === today}
+              nowMs={renderedAt.getTime()}
+            />
+          </section>
+        )}
 
         <section aria-labelledby="body-heading">
           <h2 id="body-heading" className="label-caps" style={{ marginBottom: "var(--space-md)" }}>
@@ -367,6 +404,76 @@ function MetricTile({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * The day's fast, prepared for the timer.
+ *
+ * Only the fast *ending* today gets a ring. The one starting tonight is shown
+ * as a line of text, and gets its own ring tomorrow — on the day it will
+ * actually be credited to. Two rings would race each other on one screen while
+ * only one of them counted.
+ */
+function FastingToday({
+  plan,
+  date,
+  entries,
+  entry,
+  timeZone,
+  isToday,
+  nowMs,
+}: {
+  plan: PlanInput;
+  date: PlainDate;
+  entries: readonly EntryInput[];
+  entry: EntryInput;
+  timeZone: string;
+  isToday: boolean;
+  nowMs: number;
+}) {
+  const byDate = new Map(entries.map((row) => [row.date, row]));
+  const fast = fastForDay(plan, date, byDate);
+  if (fast === null) return null;
+
+  const when = (instant: Date, dayLabel: string) =>
+    `${dayLabel}, ${formatTimeInZone(instant, timeZone)}`;
+
+  return (
+    <>
+      <FastTimer
+        status={fast.status}
+        startAtMs={fast.startAt?.getTime() ?? null}
+        endAtMs={fast.endAt?.getTime() ?? null}
+        goalHours={fast.goalHours}
+        met={fast.met}
+        nowMs={nowMs}
+        isToday={isToday}
+        startedLabel={fast.startAt ? when(fast.startAt, "Day before") : null}
+        goalEndLabel={
+          fast.startAt
+            ? formatTimeInZone(goalReachedAt(fast.startAt, fast.goalHours), timeZone)
+            : null
+        }
+        endedLabel={fast.endAt ? formatTimeInZone(fast.endAt, timeZone) : null}
+      />
+
+      {/* Tonight's fast: a fact, not a countdown. */}
+      <p
+        className="text-muted"
+        style={{
+          fontSize: "var(--text-body-md)",
+          marginTop: "var(--space-lg)",
+          paddingTop: "var(--space-md)",
+          borderTop: "1px solid var(--color-outline-variant)",
+          textAlign: "center",
+        }}
+      >
+        {entry.fastStartAt
+          ? `Tonight's fast started at ${formatTimeInZone(entry.fastStartAt, timeZone)}. It's credited to tomorrow.`
+          : "Tonight's fast hasn't been started yet."}
+      </p>
+    </>
   );
 }
 

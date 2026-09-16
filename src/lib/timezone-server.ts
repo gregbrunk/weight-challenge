@@ -27,3 +27,16 @@ export async function getTimeZone(): Promise<string> {
 export async function getToday(): Promise<PlainDate> {
   return todayInZone(await getTimeZone());
 }
+
+/**
+ * The current instant, read once per request.
+ *
+ * Trivial, and deliberately here rather than at a call site. Everything in this
+ * app that asks what time it is asks this module, so a screen can't quietly
+ * grow its own clock — and a server component reading `Date.now()` in its own
+ * body is an impure call during render, which is exactly the kind of thing that
+ * renders inconsistently when React re-runs it.
+ */
+export async function getNow(): Promise<Date> {
+  return new Date();
+}

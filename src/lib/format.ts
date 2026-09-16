@@ -89,3 +89,31 @@ export function numberToInputValue(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "";
   return String(value);
 }
+
+/**
+ * "16h 26m" — a finished fast's length.
+ *
+ * Minutes are rounded rather than truncated, so a fast two seconds short of
+ * seventeen hours doesn't read as 16h 59m while the goal says it was met.
+ */
+export function formatDuration(hours: number | null | undefined): string {
+  if (hours === null || hours === undefined || Number.isNaN(hours)) return EM_DASH;
+
+  const totalMinutes = Math.round(Math.max(hours, 0) * 60);
+  return `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+}
+
+/**
+ * "8:30:01" — a running timer, counting whole seconds.
+ *
+ * Hours are not padded and are never wrapped at 24: a timer that reset to zero
+ * a day into a fast would be actively misleading.
+ */
+export function formatClock(ms: number): string {
+  const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
