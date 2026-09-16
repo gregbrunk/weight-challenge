@@ -35,6 +35,12 @@ export interface FastTimerProps {
   startedLabel: string | null;
   goalEndLabel: string | null;
   endedLabel: string | null;
+  /**
+   * Whether a fast can be credited to this day at all. False on a plan's first
+   * day, whose fast would have had to begin before the plan existed — so this
+   * ring will never count, however diligently tonight's meal is logged.
+   */
+  creditable: boolean;
 }
 
 /**
@@ -61,6 +67,7 @@ export function FastTimer({
   startedLabel,
   goalEndLabel,
   endedLabel,
+  creditable,
 }: FastTimerProps) {
   // Seeded from the server's clock so the first paint matches the markup sent,
   // then handed over to the browser's own clock a second later.
@@ -81,11 +88,13 @@ export function FastTimer({
   if (status === "none" || startAtMs === null) {
     return (
       <EmptyRing
-        headline="No fast to end today"
+        headline={creditable ? "No fast to end today" : "The plan's first day"}
         detail={
-          isToday
-            ? "Log last night's last meal and this ring starts counting."
-            : "Nothing was started the day before, so no fast was credited here."
+          !creditable
+            ? "A fast credited here would have begun before the plan did. Log tonight's last meal and the first one lands tomorrow."
+            : isToday
+              ? "Log last night's last meal and this ring starts counting."
+              : "Nothing was started the day before, so no fast was credited here."
         }
       />
     );

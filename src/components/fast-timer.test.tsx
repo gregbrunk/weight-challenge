@@ -34,6 +34,7 @@ function props(overrides: Partial<FastTimerProps> = {}): FastTimerProps {
     startedLabel: "Day before, 6:30 PM",
     goalEndLabel: "12:30 PM",
     endedLabel: null,
+    creditable: true,
     ...overrides,
   };
 }
@@ -149,6 +150,19 @@ describe("a day with no fast to end", () => {
 
     expect(
       screen.getByText("Nothing was started the day before, so no fast was credited here."),
+    ).toBeTruthy();
+  });
+
+  it("says so on the plan's first day, which can never be credited one", () => {
+    // Day one's fast would have had to begin before the plan existed, so this
+    // ring will never count however diligently tonight's meal is logged.
+    render(<FastTimer {...props({ status: "none", startAtMs: null, creditable: false })} />);
+
+    expect(screen.getByText("The plan's first day")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A fast credited here would have begun before the plan did. Log tonight's last meal and the first one lands tomorrow.",
+      ),
     ).toBeTruthy();
   });
 });

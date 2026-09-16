@@ -10,7 +10,7 @@ import {
   type EntryInput,
   type PlanInput,
 } from "@/lib/calc";
-import { fastForDay, goalReachedAt } from "@/lib/fasting";
+import { fastForDay, goalReachedAt, isCreditable } from "@/lib/fasting";
 import { compareDates, daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
 import {
   EM_DASH,
@@ -456,6 +456,7 @@ function FastingToday({
             : null
         }
         endedLabel={fast.endAt ? formatTimeInZone(fast.endAt, timeZone) : null}
+        creditable={isCreditable(plan, date)}
       />
 
       {/* Tonight's fast: a fact, not a countdown. */}
