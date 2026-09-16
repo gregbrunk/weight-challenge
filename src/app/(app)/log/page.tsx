@@ -4,15 +4,18 @@ import { AutosaveField } from "@/components/autosave-field";
 import { DateNav } from "@/components/date-nav";
 import { PhotoSlotGroup } from "@/components/photo-slot-group";
 import { TaskChecklist, type ChecklistTask } from "@/components/task-checklist";
+import { FastingLog } from "@/components/fasting-log";
 import { getPhotosForDate, PHOTO_SLOTS, SLOT_LABELS } from "@/lib/photos";
 import { getTaskContext, toTaskInput } from "@/lib/tasks";
 import { computeTaskStats, isAutoRuleSatisfied } from "@/lib/streaks";
 import { planTargets } from "@/lib/calc";
-import { daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
+import { addDays, daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
 import { formatCalories, numberToInputValue } from "@/lib/format";
 import { getActivePlan, getEntry, toPlanInput } from "@/lib/plans";
-import { getToday } from "@/lib/timezone-server";
+import { getTimeZone, getToday } from "@/lib/timezone-server";
 import { fractionToPercent } from "@/lib/validation";
+import { formatTimeInZone, toTimeInputValue } from "@/lib/timezone";
+import { fastingPlanLabel } from "@/lib/calc";
 
 export const metadata: Metadata = {
   title: "Log · Weight Challenge",
@@ -32,10 +35,15 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
     planInput.startDate,
     targets.endDate,
   );
-  const [entry, photos, taskContext] = await Promise.all([
+  // The previous day comes along because a fast spans two of them: today's
+  // "first meal" closes the fast that began yesterday evening, so whether that
+  // field means anything at all is a fact about yesterday's row.
+  const [entry, previousEntry, photos, taskContext, timeZone] = await Promise.all([
     getEntry(plan.id, date),
+    planInput.fastingPlan === null ? null : getEntry(plan.id, addDays(date, -1)),
     getPhotosForDate(plan.id, date),
     getTaskContext(plan.id),
+    getTimeZone(),
   ]);
 
   // Whether each task is done is asked of the day being viewed; the streak is
@@ -56,7 +64,8 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
         ? completions.has(date)
         : isAutoRuleSatisfied(
             input.autoRule,
-            taskContext.entriesByDate.get(date),
+            date,
+            taskContext.entriesByDate,
             planInput,
           );
 
@@ -172,6 +181,28 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
             help={`Your floor is ${formatCalories(targets.targetActiveCals)}.`}
           />
         </Group>
+
+        {planInput.fastingPlan !== null && (
+          <Group
+            title="Intermittent fasting"
+            hint={`${fastingPlanLabel(planInput.fastingPlan)} — a fast counts on the day it ends`}
+          >
+            <FastingLog
+              date={date}
+              startValue={
+                entry?.fastStartAt ? toTimeInputValue(entry.fastStartAt, timeZone) : ""
+              }
+              endValue={entry?.fastEndAt ? toTimeInputValue(entry.fastEndAt, timeZone) : ""}
+              canEnd={previousEntry?.fastStartAt != null}
+              startedLabel={
+                previousEntry?.fastStartAt
+                  ? `at ${formatTimeInZone(previousEntry.fastStartAt, timeZone)} the day before`
+                  : null
+              }
+              isToday={date === today}
+            />
+          </Group>
+        )}
 
         {checklist.length > 0 && (
           <section className="card" aria-labelledby="tasks-heading">

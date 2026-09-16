@@ -21,12 +21,14 @@
 
 import type { EntryInput, PlanInput } from "./calc";
 import { planTargets } from "./calc";
+import { fastForDay } from "./fasting";
 import { addDays, compareDates, daysBetween, type PlainDate } from "./date";
 
 export type TaskAutoRule =
   | "manual"
   | "activeCalsAtLeastTarget"
-  | "consumedCalsAtMostCeiling";
+  | "consumedCalsAtMostCeiling"
+  | "fastGoalMet";
 
 export interface TaskInput {
   id: string;
@@ -65,16 +67,30 @@ export interface TaskDay {
 /**
  * Whether an auto-linked task counts as done for a given day.
  *
- * Returns false for a day with nothing logged: an unlogged day is not a day
+ * Takes the whole map rather than the one day's entry because not every rule is
+ * answerable from a single row: a fast is credited to the day it ends but began
+ * the evening before, so judging it needs to reach back a day. The calorie
+ * rules only ever look at `date` itself.
+ *
+ * Returns false for a day with nothing logged — an unlogged day is not a day
  * the goal was met. Manual tasks never reach here.
  */
 export function isAutoRuleSatisfied(
   rule: TaskAutoRule,
-  entry: EntryInput | undefined,
+  date: PlainDate,
+  entriesByDate: ReadonlyMap<PlainDate, EntryInput>,
   plan: PlanInput,
 ): boolean {
-  if (!entry) return false;
   const targets = planTargets(plan);
+
+  if (rule === "fastGoalMet") {
+    // Only a closed fast that reached the goal counts; `fastForDay` does the
+    // pairing and refuses to give a verdict on one still running.
+    return fastForDay(plan, date, entriesByDate)?.met ?? false;
+  }
+
+  const entry = entriesByDate.get(date);
+  if (!entry) return false;
 
   switch (rule) {
     case "activeCalsAtLeastTarget":
@@ -140,7 +156,7 @@ function isDoneOn(
   plan: PlanInput,
 ): boolean {
   if (task.autoRule === "manual") return completions.has(date);
-  return isAutoRuleSatisfied(task.autoRule, entriesByDate.get(date), plan);
+  return isAutoRuleSatisfied(task.autoRule, date, entriesByDate, plan);
 }
 
 /**
@@ -319,4 +335,5 @@ export const AUTO_RULE_LABELS: Record<TaskAutoRule, string> = {
   manual: "Tick it yourself",
   activeCalsAtLeastTarget: "Ticks when active calories reach your floor",
   consumedCalsAtMostCeiling: "Ticks when eaten calories stay under your ceiling",
+  fastGoalMet: "Ticks when Intermittent Fasting goal is reached or exceeded",
 };

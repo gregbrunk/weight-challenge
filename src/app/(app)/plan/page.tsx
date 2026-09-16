@@ -135,6 +135,7 @@ export default async function PlanPage() {
           tasks={managedTasks}
           foodCeiling={`${formatCalories(targets.allowedFoodCals)} cal`}
           exerciseFloor={`${formatCalories(targets.targetActiveCals)} cal`}
+          fastingGoal={targets.fastingHours === null ? null : `${targets.fastingHours}h`}
         />
       </section>
 
