@@ -5,7 +5,13 @@ import { requireAuth } from "@/lib/auth/server";
 import { planTargets } from "@/lib/calc";
 import { addDays, isPlainDate, type PlainDate } from "@/lib/date";
 import { hoursBetween } from "@/lib/fasting";
-import { getActivePlan, getEntry, saveEntryFields, toPlanInput } from "@/lib/plans";
+import {
+  getActivePlan,
+  getEntry,
+  savePreStartFast,
+  saveEntryFields,
+  toPlanInput,
+} from "@/lib/plans";
 import { getTimeZone } from "@/lib/timezone-server";
 import {
   instantFromZonedTime,
@@ -23,8 +29,14 @@ export type SaveFastResult =
   | { ok: true; value: string }
   | { ok: false; error: string };
 
-/** Which end of a fast a value belongs to. */
-export type FastEdge = "start" | "end";
+/**
+ * Which end of a fast a value belongs to.
+ *
+ * `preStart` is the odd one: the last meal the evening *before* the plan began.
+ * It is the start that day one's fast needs, and the only one with no day of
+ * its own to live on, so it is stored on the plan instead of in an entry.
+ */
+export type FastEdge = "start" | "end" | "preStart";
 
 /**
  * The longest fast this will record.
@@ -38,9 +50,9 @@ const MAX_FAST_HOURS = 48;
 /**
  * Records when you last ate, or when you first ate.
  *
- * Both edges are stored against the day they happened on: the start on the
- * evening it began, the end on the morning it finished. Pairing them into one
- * fast is `fastForDay`'s job, not this one's — here the only question is
+ * Both ordinary edges are stored against the day they happened on: the start on
+ * the evening it began, the end on the morning it finished. Pairing them into
+ * one fast is `fastForDay`'s job, not this one's — here the only question is
  * whether the time you typed is a time that could have happened.
  *
  * `value` is a wall-clock "HH:MM" in the app's timezone, "" to clear the time,
@@ -58,7 +70,7 @@ export async function saveFastTimeAction(input: {
   if (!isPlainDate(input.date)) {
     return { ok: false, error: "That isn't a valid date." };
   }
-  if (input.edge !== "start" && input.edge !== "end") {
+  if (input.edge !== "start" && input.edge !== "end" && input.edge !== "preStart") {
     return { ok: false, error: "Unknown fast time." };
   }
 
@@ -76,13 +88,23 @@ export async function saveFastTimeAction(input: {
     return { ok: false, error: "That date is outside this plan." };
   }
 
+  // The pre-plan evening is only ever edited from day one's screen, which is
+  // the one day it means anything on.
+  if (input.edge === "preStart" && date !== planInput.startDate) {
+    return { ok: false, error: "That time belongs to the plan's first day." };
+  }
+
+  // The calendar day the time is a wall-clock reading *on*. For the pre-plan
+  // evening that is the day before the plan, which has no entry of its own.
+  const timeOfDay: PlainDate =
+    input.edge === "preStart" ? addDays(planInput.startDate, -1) : date;
+
   const timeZone = await getTimeZone();
-  const column = input.edge === "start" ? "fastStartAt" : "fastEndAt";
 
   // Clearing is always allowed: a time logged by mistake has to be removable,
   // and an orphaned half-fast simply stops being counted.
   if (input.value.trim() === "") {
-    await saveEntryFields(plan.id, date, { [column]: null });
+    await write(plan.id, input.edge, date, null);
     revalidateFasting();
     return { ok: true, value: "" };
   }
@@ -90,43 +112,72 @@ export async function saveFastTimeAction(input: {
   let instant: Date;
   if (input.value === "now") {
     instant = new Date();
-    if (zonedDateOf(instant, timeZone) !== date) {
+    if (zonedDateOf(instant, timeZone) !== timeOfDay) {
       return { ok: false, error: "It isn't that day any more — type the time instead." };
     }
   } else {
     const minutes = parseTimeInput(input.value);
     if (minutes === null) return { ok: false, error: "Enter a time like 6:30 PM." };
-    instant = instantFromZonedTime(date, minutes, timeZone);
+    instant = instantFromZonedTime(timeOfDay, minutes, timeZone);
   }
 
   const problem =
     input.edge === "end"
-      ? await checkEnd(plan.id, date, instant)
-      : await checkStart(plan.id, date, instant);
+      ? await checkEnd(plan.id, planInput.startDate, planInput.preStartFastAt, date, instant)
+      : // A start pairs with the end logged on the following day — which for the
+        // pre-plan evening is day one itself.
+        await checkStart(
+          plan.id,
+          input.edge === "preStart" ? planInput.startDate : addDays(date, 1),
+          instant,
+        );
   if (problem) return { ok: false, error: problem };
 
-  await saveEntryFields(plan.id, date, { [column]: instant });
+  await write(plan.id, input.edge, date, instant);
   revalidateFasting();
   return { ok: true, value: toTimeInputValue(instant, timeZone) };
+}
+
+/** Each edge to its home: two columns on the day, one column on the plan. */
+async function write(
+  planId: string,
+  edge: FastEdge,
+  date: PlainDate,
+  instant: Date | null,
+): Promise<void> {
+  if (edge === "preStart") {
+    await savePreStartFast(planId, instant);
+    return;
+  }
+
+  const column = edge === "start" ? "fastStartAt" : "fastEndAt";
+  await saveEntryFields(planId, date, { [column]: instant });
 }
 
 /**
  * An end time is only meaningful against the start it closes.
  *
- * Without a start on the day before there is nothing to measure from, which is
- * why the Log screen greys the field out — this is the same rule enforced where
- * it counts, for the case where the page is stale or the start was just cleared.
+ * Without that start there is nothing to measure from, which is why the Log
+ * screen greys the field out — this is the same rule enforced where it counts,
+ * for the case where the page is stale or the start was just cleared. On day
+ * one the start is the plan's pre-plan evening rather than a previous row.
  */
 async function checkEnd(
   planId: string,
+  planStart: PlainDate,
+  preStartFastAt: Date | null,
   date: PlainDate,
   instant: Date,
 ): Promise<string | null> {
-  const previous = await getEntry(planId, addDays(date, -1));
-  const startAt = previous?.fastStartAt ?? null;
+  const startAt =
+    date === planStart
+      ? preStartFastAt
+      : ((await getEntry(planId, addDays(date, -1)))?.fastStartAt ?? null);
 
   if (startAt === null) {
-    return "No fast was started the day before, so there's nothing to end.";
+    return date === planStart
+      ? "Nothing was logged for the evening before the plan started, so there's nothing to end."
+      : "No fast was started the day before, so there's nothing to end.";
   }
   if (instant <= startAt) {
     return "That's before the fast started — check the time.";
@@ -139,17 +190,16 @@ async function checkEnd(
 }
 
 /**
- * A start has no partner yet unless tomorrow's end is already logged, which
- * happens when an earlier mistake is being corrected. When it is, the pair still
- * has to make sense in the same direction.
+ * A start has no partner yet unless the end it pairs with is already logged,
+ * which happens when an earlier mistake is being corrected. When it is, the
+ * pair still has to make sense in the same direction.
  */
 async function checkStart(
   planId: string,
-  date: PlainDate,
+  pairedEndDate: PlainDate,
   instant: Date,
 ): Promise<string | null> {
-  const next = await getEntry(planId, addDays(date, 1));
-  const endAt = next?.fastEndAt ?? null;
+  const endAt = (await getEntry(planId, pairedEndDate))?.fastEndAt ?? null;
   if (endAt === null) return null;
 
   if (endAt <= instant) {

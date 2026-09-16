@@ -50,6 +50,7 @@ const plan: import("@/lib/calc").PlanInput = {
   startSystolic: null,
   startDiastolic: null,
   fastingPlan: "fast18_6",
+  preStartFastAt: null,
 };
 
 function entry(

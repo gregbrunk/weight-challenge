@@ -21,7 +21,7 @@
 
 import type { EntryInput, PlanInput } from "./calc";
 import { planTargets } from "./calc";
-import { fastForDay } from "./fasting";
+import { fastForDay, firstCreditableDate } from "./fasting";
 import { addDays, compareDates, daysBetween, type PlainDate } from "./date";
 
 export type TaskAutoRule =
@@ -110,9 +110,17 @@ export function taskWindow(
 ): { start: PlainDate; end: PlainDate; length: number } {
   const planEnd = planTargets(plan).endDate;
 
-  const start = compareDates(task.startDate, plan.startDate) > 0
+  // A fasting habit cannot begin before the first day a fast can be credited to,
+  // which is day two unless the evening before the plan was recorded. Without
+  // this the card marks day one eligible and never satisfiable, so a flawless
+  // record reads as a miss and the streak breaks on the very first day — while
+  // the Progress figures, which already know this, say 100%.
+  const earliest =
+    task.autoRule === "fastGoalMet" ? firstCreditableDate(plan) : plan.startDate;
+
+  const start = compareDates(task.startDate, earliest) > 0
     ? task.startDate
-    : plan.startDate;
+    : earliest;
   // Never counts days that haven't happened, and never past the plan's end.
   const end = compareDates(today, planEnd) > 0 ? planEnd : today;
 

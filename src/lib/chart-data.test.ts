@@ -20,6 +20,7 @@ const plan: PlanInput = {
   startSystolic: 134,
   startDiastolic: 91,
   fastingPlan: null,
+  preStartFastAt: null,
 };
 
 function entry(date: string, fields: Partial<EntryInput> = {}): EntryInput {

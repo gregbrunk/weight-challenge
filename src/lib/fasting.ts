@@ -19,10 +19,12 @@
  *
  * Two consequences worth stating, because they look like bugs otherwise:
  *
- *   1. **A plan's first day can never be credited a fast.** The start it would
- *      need sits on the day before the plan began, which has no row. Day one is
- *      therefore left out of every denominator rather than counted as a day you
- *      failed — the same reasoning that gives `Task` a `startDate`.
+ *   1. **A plan's first day is only creditable if you say so.** The start it
+ *      needs sits on the evening before the plan began, which has no row to
+ *      live on, so it lives on the plan as `preStartFastAt`. Record it and day
+ *      one counts like any other; leave it null and day one drops out of every
+ *      denominator rather than standing as a day you could never have won —
+ *      the same reasoning that gives `Task` a `startDate`.
  *   2. **A fast is only judged once it is closed.** Being nineteen hours into an
  *      eighteen-hour goal is not a success yet: you might have eaten at eleven
  *      and forgotten to say so, which is exactly why the end time is editable.
@@ -82,13 +84,14 @@ export function hoursBetween(start: Date, end: Date): number {
 }
 
 /**
- * The first day a fast can be credited to — the plan's second day.
+ * The first day a fast can be credited to.
  *
- * See consequence (1) above: a fast credited to day one would have had to begin
- * before the plan existed.
+ * Day two, unless the evening before the plan began was recorded — see
+ * `preStartFastAt`. That one value is the difference between a plan of N
+ * fastable nights and one of N−1, so it moves every denominator below.
  */
 export function firstCreditableDate(plan: PlanInput): PlainDate {
-  return addDays(plan.startDate, 1);
+  return plan.preStartFastAt === null ? addDays(plan.startDate, 1) : plan.startDate;
 }
 
 /** Whether a fast can be credited to this day at all. */
@@ -98,6 +101,27 @@ export function isCreditable(plan: PlanInput, date: PlainDate): boolean {
     compareDates(date, firstCreditableDate(plan)) >= 0 &&
     compareDates(date, endDate) <= 0
   );
+}
+
+/** How many days of the whole plan a fast can ever be credited to. */
+export function creditableDayCount(plan: PlanInput): number {
+  return Math.max(plan.preStartFastAt === null ? plan.days - 1 : plan.days, 0);
+}
+
+/**
+ * Where the start of the fast credited to `date` comes from.
+ *
+ * Normally the previous day's row. Day one is the exception, and the only one:
+ * the evening it needs precedes the plan, so it has no row and the start lives
+ * on the plan itself. Recording it is what makes day one creditable at all.
+ */
+function fastStartFor(
+  plan: PlanInput,
+  date: PlainDate,
+  entries: EntriesByDate,
+): Date | null {
+  if (date === plan.startDate) return plan.preStartFastAt;
+  return entries.get(addDays(date, -1))?.fastStartAt ?? null;
 }
 
 /**
@@ -114,7 +138,7 @@ export function fastForDay(
   if (plan.fastingPlan === null) return null;
 
   const goalHours = fastingPlanHours(plan.fastingPlan);
-  const startAt = entries.get(addDays(date, -1))?.fastStartAt ?? null;
+  const startAt = fastStartFor(plan, date, entries);
   const endAt = entries.get(date)?.fastEndAt ?? null;
 
   // An end with no start is not a fast. The Log screen refuses to record one,
@@ -241,8 +265,13 @@ export function stepWeek(
 export interface FastingStats {
   goalHours: number;
 
-  /** Days of the plan a fast could ever be credited to — every day but the first. */
+  /**
+   * Days of the plan a fast could ever be credited to. Every day but the first,
+   * unless the evening before day one was recorded, in which case all of them.
+   */
   creditableDays: number;
+  /** Whether day one is among them — i.e. whether that evening was recorded. */
+  firstDayCounts: boolean;
   /** Those that have happened so far. The denominator for the success rate. */
   elapsedDays: number;
 
@@ -286,8 +315,8 @@ export function fastingStats(
   const goalHours = fastingPlanHours(plan.fastingPlan);
   const { endDate } = planTargets(plan);
 
-  // Every day but the first; never fewer than zero for a one-day plan.
-  const creditableDays = Math.max(plan.days - 1, 0);
+  // Every day but the first, unless the evening before day one was recorded.
+  const creditableDays = creditableDayCount(plan);
 
   const lastElapsed = compareDates(today, endDate) < 0 ? today : endDate;
   const elapsedDays = Math.max(
@@ -318,6 +347,7 @@ export function fastingStats(
   return {
     goalHours,
     creditableDays,
+    firstDayCounts: plan.preStartFastAt !== null,
     elapsedDays,
     completedFasts,
     daysMet,

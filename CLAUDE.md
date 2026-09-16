@@ -43,12 +43,20 @@ Break these and things go subtly wrong rather than loudly wrong.
   paired with day D's end, credited to D. `fastForDay` in `src/lib/fasting.ts`
   is the only place that pairing happens — never re-derive it at a call site.
 
-  Two consequences that look like bugs: a plan's **first day can never be
-  credited a fast** (its start would predate the plan), so it is excluded from
-  every denominator rather than counted as a failure; and a fast is **only
-  judged once closed** — nineteen hours into an eighteen-hour goal is not a
-  success, because you may have eaten at eleven and not said so yet. That is
-  why the end time is editable and not just a button.
+  Two consequences that look like bugs: a plan's **first day is creditable only
+  if `Plan.preStartFastAt` is set** — the evening before the plan began, which
+  has no row to live on because its day precedes the plan — and otherwise drops
+  out of every denominator rather than standing as a day that could never be
+  won; and a fast is **only judged once closed** — nineteen hours into an
+  eighteen-hour goal is not a success, because you may have eaten at eleven and
+  not said so yet. That is why the end time is editable and not just a button.
+
+  `firstCreditableDate` and `creditableDayCount` are the single answer to "does
+  day one count", and **everything that counts days must ask them**, including
+  `taskWindow` in `streaks.ts`. It didn't at first, so a fasting habit marked
+  day one eligible and never satisfiable: a flawless record read 2 of 3, the
+  streak broke on day one, and the card contradicted Progress, which already
+  knew better. Covered now in `streaks.test.ts`.
 - **"Today" comes from the app's timezone setting**, not the server or the
   browser: `getToday()` in `src/lib/timezone-server.ts`. Defaults to
   `America/Denver`. The server runs in UTC and would be a day ahead in the

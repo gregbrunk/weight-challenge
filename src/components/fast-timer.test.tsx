@@ -17,7 +17,17 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { FastTimer, type FastTimerProps } from "./fast-timer";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  // The count-up/count-down choice is remembered in localStorage, which
+  // outlives a render. Without this, whichever test clicks "Count down" last
+  // silently sets the starting mode for every test after it.
+  try {
+    window.localStorage.clear();
+  } catch {
+    // Nothing stored means nothing to clear.
+  }
+});
 
 const START = Date.parse("2026-09-15T00:30:00Z");
 const HOUR = 3_600_000;
@@ -153,16 +163,25 @@ describe("a day with no fast to end", () => {
     ).toBeTruthy();
   });
 
-  it("says so on the plan's first day, which can never be credited one", () => {
-    // Day one's fast would have had to begin before the plan existed, so this
-    // ring will never count however diligently tonight's meal is logged.
+  it("points day one at the evening it needs, rather than calling it impossible", () => {
+    // Day one's fast begins before the plan starts, so it has nowhere to be
+    // logged except the plan itself — and the message has to say where.
     render(<FastTimer {...props({ status: "none", startAtMs: null, creditable: false })} />);
 
     expect(screen.getByText("The plan's first day")).toBeTruthy();
     expect(
       screen.getByText(
-        "A fast credited here would have begun before the plan did. Log tonight's last meal and the first one lands tomorrow.",
+        "This day's fast began the evening before the plan. Log that evening on the Log screen and day one counts like any other.",
       ),
     ).toBeTruthy();
+  });
+
+  it("runs a normal timer on day one once that evening is recorded", () => {
+    // `creditable` is what the pre-plan evening buys: with it, day one is an
+    // ordinary fasting day and the ring counts like any other.
+    render(<FastTimer {...props({ creditable: true })} />);
+
+    expect(screen.getByText("Elapsed (47%)")).toBeTruthy();
+    expect(screen.queryByText("The plan's first day")).toBeNull();
   });
 });

@@ -9,7 +9,7 @@ import { getPhotosForDate, PHOTO_SLOTS, SLOT_LABELS } from "@/lib/photos";
 import { getTaskContext, toTaskInput } from "@/lib/tasks";
 import { computeTaskStats, isAutoRuleSatisfied } from "@/lib/streaks";
 import { planTargets } from "@/lib/calc";
-import { addDays, daysBetween, isPlainDate, type PlainDate } from "@/lib/date";
+import { addDays, daysBetween, formatShort, isPlainDate, type PlainDate } from "@/lib/date";
 import { formatCalories, numberToInputValue } from "@/lib/format";
 import { getActivePlan, getEntry, toPlanInput } from "@/lib/plans";
 import { getTimeZone, getToday } from "@/lib/timezone-server";
@@ -84,6 +84,10 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
   // One source for the day number: the header and the photo viewer's caption
   // must never disagree about which day of the plan this is.
   const dayNumber = daysBetween(planInput.startDate, date) + 1;
+
+  // Day one is the only day whose fast begins outside the plan.
+  const isFirstDay = date === planInput.startDate;
+  const dayBeforePlan = addDays(planInput.startDate, -1);
 
   return (
     <>
@@ -193,13 +197,33 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
                 entry?.fastStartAt ? toTimeInputValue(entry.fastStartAt, timeZone) : ""
               }
               endValue={entry?.fastEndAt ? toTimeInputValue(entry.fastEndAt, timeZone) : ""}
-              canEnd={previousEntry?.fastStartAt != null}
+              // Day one's start lives on the plan, not on a previous row.
+              canEnd={
+                isFirstDay
+                  ? planInput.preStartFastAt !== null
+                  : previousEntry?.fastStartAt != null
+              }
               startedLabel={
-                previousEntry?.fastStartAt
-                  ? `at ${formatTimeInZone(previousEntry.fastStartAt, timeZone)} the day before`
-                  : null
+                isFirstDay
+                  ? planInput.preStartFastAt
+                    ? `at ${formatTimeInZone(planInput.preStartFastAt, timeZone)} the evening before the plan`
+                    : null
+                  : previousEntry?.fastStartAt
+                    ? `at ${formatTimeInZone(previousEntry.fastStartAt, timeZone)} the day before`
+                    : null
               }
               isToday={date === today}
+              preStart={
+                isFirstDay
+                  ? {
+                      value: planInput.preStartFastAt
+                        ? toTimeInputValue(planInput.preStartFastAt, timeZone)
+                        : "",
+                      dayLabel: formatShort(dayBeforePlan),
+                      offerNow: today === dayBeforePlan,
+                    }
+                  : null
+              }
             />
           </Group>
         )}

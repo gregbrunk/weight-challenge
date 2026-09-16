@@ -56,6 +56,16 @@ model Plan {
   /// every screen. Existing plans start null, so nothing changes until asked.
   fastingPlan      FastingPlan?
 
+  /// The last meal on the evening BEFORE day one — the only fast start that has
+  /// no day of its own to live on, because the day it belongs to precedes the
+  /// plan. Without it a plan's first day can never be credited a fast, however
+  /// diligently you fasted the night you started.
+  ///
+  /// Kept here rather than as a `DailyEntry` at `startDate - 1`: too much of
+  /// the app assumes entries lie inside the plan, and such a row would export
+  /// as day zero and sit off the left edge of every chart.
+  preStartFastAt   DateTime? @db.Timestamptz(3)
+
   // --- Baseline measurements ----------------------------------------------
   // All optional: you may not have a VO2 max or a blood pressure cuff on day
   // one, and the app degrades to "—" rather than refusing to start.
