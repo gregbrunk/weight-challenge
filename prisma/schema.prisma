@@ -18,6 +18,18 @@ enum PlanStatus {
   archived
 }
 
+/// The intermittent-fasting schedules on offer, named fast:eat.
+///
+/// The number of fasting hours is the only thing the math wants; the eating
+/// window is always the remainder of the day, so it is derived rather than
+/// stored. Null on a plan means fasting is switched off, which keeps
+/// "enabled but no schedule chosen" from being representable at all.
+enum FastingPlan {
+  fast16_8
+  fast18_6
+  fast20_4
+}
+
 /// A weight-loss attempt: its configuration, its baseline measurements, and
 /// everything logged against it. Exactly one plan is `active` at a time; the
 /// application enforces that when activating, since archiving is a two-row swap.
@@ -40,6 +52,9 @@ model Plan {
   lbsToLose        Float
   /// Calories per pound of fat. 3500 by convention.
   calsPerLb        Int   @default(3500)
+  /// Null switches intermittent fasting off, and the feature disappears from
+  /// every screen. Existing plans start null, so nothing changes until asked.
+  fastingPlan      FastingPlan?
 
   // --- Baseline measurements ----------------------------------------------
   // All optional: you may not have a VO2 max or a blood pressure cuff on day
@@ -80,6 +95,21 @@ model DailyEntry {
   diastolic    Int?
   consumedCals Int?
   activeCals   Int?
+
+  // --- Intermittent fasting ------------------------------------------------
+  // A fast is an interval spanning two rows: it begins the evening of one day
+  // and ends the next morning. `fastStartAt` is the fast *beginning* on this
+  // day; `fastEndAt` is the one *ending* on it. So a single complete fast is
+  // yesterday's `fastStartAt` paired with today's `fastEndAt`, and the day it
+  // ends is the day credited with it — the morning you held out until noon is
+  // the achievement, not the evening you stopped eating.
+  //
+  // Stored as instants rather than wall-clock times so a fast spanning a
+  // daylight-saving change is still measured as the hours it really lasted.
+  // Each one is required to fall on its own row's calendar day in the app's
+  // timezone, which is what keeps the pairing unambiguous.
+  fastStartAt DateTime? @db.Timestamptz(3)
+  fastEndAt   DateTime? @db.Timestamptz(3)
 
   note String?
 
@@ -146,6 +176,8 @@ enum TaskAutoRule {
   activeCalsAtLeastTarget
   /// Ticks itself when the day's consumed calories stay under the plan's ceiling.
   consumedCalsAtMostCeiling
+  /// Ticks itself when the fast credited to the day reaches the plan's goal.
+  fastGoalMet
 }
 
 /// A daily habit tracked for a streak — "No eating out", "Hit 1,200 active".

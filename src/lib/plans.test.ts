@@ -30,6 +30,7 @@ const plan: Plan = {
   startVo2Max: 37.2,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
   createdAt: new Date("2026-05-01T12:00:00Z"),
   updatedAt: new Date("2026-05-01T12:00:00Z"),
   archivedAt: new Date("2026-08-01T12:00:00Z"),
@@ -50,7 +51,20 @@ describe("planToFormValues", () => {
       startVo2Max: "37.2",
       startSystolic: "134",
       startDiastolic: "91",
+      fastingPlan: "",
     });
+  });
+
+  it("spells a plan with no fasting schedule as an empty string", () => {
+    // "" is what the form's checkbox reads as "off"; null would select nothing
+    // in the schedule dropdown and submit the string "null".
+    expect(planToFormValues(plan).fastingPlan).toBe("");
+  });
+
+  it("carries a chosen fasting schedule through to the form", () => {
+    expect(planToFormValues({ ...plan, fastingPlan: "fast18_6" }).fastingPlan).toBe(
+      "fast18_6",
+    );
   });
 
   /**

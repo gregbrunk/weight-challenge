@@ -29,6 +29,7 @@ const marchPlan: PlanInput = {
   startVo2Max: 35.4,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
 };
 
 /** Rows 3–16 of the sheet. Blank cells are null, exactly as they were blank there. */
@@ -67,6 +68,9 @@ function row(
     diastolic,
     consumedCals,
     activeCals,
+    // The spreadsheet predates fasting; these rows never carried one.
+    fastStartAt: null,
+    fastEndAt: null,
   };
 }
 

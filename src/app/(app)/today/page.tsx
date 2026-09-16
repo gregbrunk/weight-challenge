@@ -385,6 +385,8 @@ function emptyEntry(date: PlainDate): EntryInput {
     diastolic: null,
     consumedCals: null,
     activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
   };
 }
 

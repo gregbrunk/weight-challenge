@@ -28,6 +28,7 @@ const plan: PlanInput = {
   startVo2Max: 37.2,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
 };
 
 const manualTask: TaskInput = {
@@ -205,6 +206,8 @@ describe("auto-linked tasks", () => {
     diastolic: null,
     consumedCals: null,
     activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
     ...fields,
   });
 

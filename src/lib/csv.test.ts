@@ -20,6 +20,7 @@ const plan: PlanInput = {
   startVo2Max: 35.4,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
 };
 
 const entries: EntryInput[] = [
@@ -32,6 +33,8 @@ const entries: EntryInput[] = [
     diastolic: 91,
     consumedCals: 1450,
     activeCals: 1157,
+    fastStartAt: null,
+    fastEndAt: null,
   },
   {
     // A partial day: weight only, which the export must not treat as zeroes.
@@ -43,6 +46,8 @@ const entries: EntryInput[] = [
     diastolic: null,
     consumedCals: null,
     activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
   },
 ];
 

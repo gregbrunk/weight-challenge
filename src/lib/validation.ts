@@ -8,6 +8,7 @@
  */
 
 import { z } from "zod";
+import { FASTING_PLANS } from "./calc";
 import { isPlainDate } from "./date";
 
 /**
@@ -93,6 +94,19 @@ export const planFieldsSchema = z.object({
   startDiastolic: optionalNumber(
     z.number().int().min(30, "Diastolic looks too low.").max(200, "Diastolic looks too high."),
   ),
+
+  /**
+   * Fasting is off unless a schedule is chosen. An absent field and an empty
+   * one both mean off, which is what a checkbox that never submits looks like.
+   */
+  fastingPlan: z
+    .preprocess(
+      (value) => (value === null || value === undefined ? "" : value),
+      z.union([z.literal(""), z.enum(FASTING_PLANS)], {
+        error: "Pick one of the fasting schedules.",
+      }),
+    )
+    .transform((value) => (value === "" ? null : value)),
 });
 
 export type PlanFieldsSubmission = z.infer<typeof planFieldsSchema>;

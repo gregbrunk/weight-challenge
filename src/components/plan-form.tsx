@@ -4,7 +4,14 @@ import { useActionState, useId, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { NumberField } from "./number-field";
-import { planTargets, type PlanInput } from "@/lib/calc";
+import {
+  FASTING_PLANS,
+  fastingPlanHours,
+  fastingPlanLabel,
+  isFastingPlan,
+  planTargets,
+  type PlanInput,
+} from "@/lib/calc";
 import { formatCalories, formatWeight } from "@/lib/format";
 import { formatLong, isPlainDate, type PlainDate } from "@/lib/date";
 import { createPlanAction, updatePlanAction } from "@/actions/plan";
@@ -24,6 +31,8 @@ export interface PlanFormValues {
   startVo2Max: string;
   startSystolic: string;
   startDiastolic: string;
+  /** One of the `FastingPlan` values, or "" when fasting is off. */
+  fastingPlan: string;
 }
 
 interface Props {
@@ -243,6 +252,12 @@ export function PlanForm({ mode, planId, sourcePlanId, initialValues }: Props) {
           </div>
         </Section>
 
+        <FastingSection
+          value={values.fastingPlan}
+          onChange={set("fastingPlan")}
+          error={state.errors.fastingPlan}
+        />
+
         <div className="flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">
           <SubmitButton mode={mode} />
           {mode === "edit" && (
@@ -309,6 +324,89 @@ export function PlanForm({ mode, planId, sourcePlanId, initialValues }: Props) {
         </div>
       </aside>
     </form>
+  );
+}
+
+/**
+ * Turning fasting on, and picking a schedule.
+ *
+ * Two steps rather than one select with an "off" option, because they answer
+ * different questions: whether this plan involves fasting at all, and then what
+ * kind. Off is the default, and while it is off the feature is absent from the
+ * whole app rather than sitting empty on three screens.
+ *
+ * The checkbox writes a schedule into the same value the select edits, so there
+ * is one piece of state and no way for "on" and "no schedule" to coexist.
+ */
+function FastingSection({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+}) {
+  const selectId = useId();
+  const enabled = isFastingPlan(value);
+
+  return (
+    <Section
+      title="Intermittent fasting"
+      description="Optional. Track an overnight fast and it appears on Log, Today and Progress — leave it off and it stays out of the app entirely."
+    >
+      <label className="task-control" data-done={enabled || undefined}>
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={enabled}
+          onChange={(event) => onChange(event.target.checked ? FASTING_PLANS[0] : "")}
+        />
+        <span className="task-box" data-done={enabled || undefined} aria-hidden="true">
+          {enabled ? "\u2713" : ""}
+        </span>
+        <span className="task-body">
+          <span className="task-name">Track intermittent fasting</span>
+        </span>
+      </label>
+
+      {enabled && (
+        <div className="field">
+          <label className="field-label" htmlFor={selectId}>
+            Schedule
+          </label>
+          <select
+            id={selectId}
+            className="field-input"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${selectId}-error` : `${selectId}-help`}
+          >
+            {FASTING_PLANS.map((plan) => (
+              <option key={plan} value={plan}>
+                {fastingPlanLabel(plan)} — fast {fastingPlanHours(plan)}h, eat{" "}
+                {24 - fastingPlanHours(plan)}h
+              </option>
+            ))}
+          </select>
+          {error ? (
+            <p id={`${selectId}-error`} className="field-error">
+              {error}
+            </p>
+          ) : (
+            <p id={`${selectId}-help`} className="field-help">
+              A fast is credited to the day it ends, so holding out until noon
+              earns the morning, not the evening you stopped eating.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* The select is absent from the DOM while fasting is off, so the value
+          travels in a hidden field that is always present. */}
+      <input type="hidden" name="fastingPlan" value={enabled ? value : ""} />
+    </Section>
   );
 }
 
@@ -424,6 +522,7 @@ function usePlanPreview(values: PlanFormValues) {
     const calsPerLb = num(values.calsPerLb);
     const startWeight = num(values.startWeight);
     const startDate = values.startDate;
+    const fastingPlan = isFastingPlan(values.fastingPlan) ? values.fastingPlan : null;
 
     const complete =
       days !== null &&
@@ -458,6 +557,7 @@ function usePlanPreview(values: PlanFormValues) {
       startVo2Max: null,
       startSystolic: null,
       startDiastolic: null,
+      fastingPlan,
     };
 
     const targets = planTargets(plan);
