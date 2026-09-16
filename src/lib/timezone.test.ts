@@ -12,11 +12,19 @@ import {
   allTimeZones,
   COMMON_TIME_ZONES,
   DEFAULT_TIME_ZONE,
+  instantFromZonedTime,
   isValidTimeZone,
+  MINUTES_PER_DAY,
+  minutesToTimeInput,
+  parseTimeInput,
   timeInZone,
   todayInZone,
+  toTimeInputValue,
   zoneAbbreviation,
   zoneCityName,
+  zonedDateOf,
+  zonedMinutesOf,
+  zoneOffsetMs,
 } from "./timezone";
 
 /** A UTC instant, written the way it reads in the database. */
@@ -158,5 +166,81 @@ describe("display helpers", () => {
     expect(zoneCityName("America/Denver")).toBe("Denver");
     expect(zoneCityName("America/Los_Angeles")).toBe("Los Angeles");
     expect(zoneCityName("UTC")).toBe("UTC");
+  });
+});
+
+describe("wall-clock times", () => {
+  const DENVER = "America/Denver";
+
+  it("turns a wall-clock time in a zone into the instant it names", () => {
+    // 6:30pm on 15 September is UTC−6 in Denver, so half past midnight UTC.
+    expect(
+      instantFromZonedTime("2026-09-15", 18 * 60 + 30, DENVER).toISOString(),
+    ).toBe("2026-09-16T00:30:00.000Z");
+  });
+
+  it("handles midnight as hour zero, not hour twenty-four", () => {
+    // `hour12: false` reports midnight as 24 on some ICU builds, which would
+    // land this a whole day out. The h23 hour cycle is what prevents it.
+    expect(instantFromZonedTime("2026-09-15", 0, DENVER).toISOString()).toBe(
+      "2026-09-15T06:00:00.000Z",
+    );
+    expect(zonedMinutesOf(new Date("2026-09-15T06:00:00Z"), DENVER)).toBe(0);
+  });
+
+  it("round-trips every half hour of a day", () => {
+    for (let minutes = 0; minutes < MINUTES_PER_DAY; minutes += 30) {
+      const instant = instantFromZonedTime("2026-09-15", minutes, DENVER);
+      expect(zonedMinutesOf(instant, DENVER)).toBe(minutes);
+      expect(zonedDateOf(instant, DENVER)).toBe("2026-09-15");
+    }
+  });
+
+  it("uses the offset in force on the day, not today's", () => {
+    // January is MST (UTC−7); September is MDT (UTC−6). The same wall time
+    // resolves to a different instant in each.
+    expect(instantFromZonedTime("2026-01-15", 12 * 60, DENVER).toISOString()).toBe(
+      "2026-01-15T19:00:00.000Z",
+    );
+    expect(instantFromZonedTime("2026-09-15", 12 * 60, DENVER).toISOString()).toBe(
+      "2026-09-15T18:00:00.000Z",
+    );
+  });
+
+  it("resolves a time the spring-forward skips to the instant the clock jumps to", () => {
+    // Denver springs forward on 8 March 2026: 2am becomes 3am, so 2:30am never
+    // happens. It must still resolve to something, and never throw.
+    const skipped = instantFromZonedTime("2026-03-08", 2 * 60 + 30, DENVER);
+    expect(skipped.toISOString()).toBe("2026-03-08T09:30:00.000Z");
+    expect(zonedMinutesOf(skipped, DENVER)).toBe(3 * 60 + 30);
+  });
+
+  it("resolves a time the autumn fall-back repeats to the first of the two", () => {
+    // 1:30am happens twice on 1 November 2026; the earlier one is MDT (UTC−6).
+    expect(
+      instantFromZonedTime("2026-11-01", 60 + 30, DENVER).toISOString(),
+    ).toBe("2026-11-01T07:30:00.000Z");
+  });
+
+  it("reports a zone's offset at an instant", () => {
+    expect(zoneOffsetMs(new Date("2026-09-15T18:00:00Z"), DENVER)).toBe(-6 * 3_600_000);
+    expect(zoneOffsetMs(new Date("2026-01-15T18:00:00Z"), DENVER)).toBe(-7 * 3_600_000);
+    expect(zoneOffsetMs(new Date("2026-09-15T18:00:00Z"), "UTC")).toBe(0);
+  });
+
+  it("formats and parses the value a time input round-trips", () => {
+    const instant = instantFromZonedTime("2026-09-15", 18 * 60 + 30, DENVER);
+    expect(toTimeInputValue(instant, DENVER)).toBe("18:30");
+    expect(parseTimeInput("18:30")).toBe(18 * 60 + 30);
+    expect(minutesToTimeInput(0)).toBe("00:00");
+    expect(minutesToTimeInput(9 * 60 + 5)).toBe("09:05");
+  });
+
+  it("rejects anything that isn't a time", () => {
+    expect(parseTimeInput("")).toBeNull();
+    expect(parseTimeInput("24:00")).toBeNull();
+    expect(parseTimeInput("12:60")).toBeNull();
+    expect(parseTimeInput("noon")).toBeNull();
+    expect(parseTimeInput("12")).toBeNull();
   });
 });

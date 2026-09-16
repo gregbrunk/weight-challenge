@@ -11,8 +11,14 @@ A mobile-first web app for running a math-based weight-loss plan, based on a spr
 - **Log** — weight and body fat in the morning, calories and blood pressure at
   night. Every field saves itself; nothing needs finishing in one sitting.
   Optional progress photos, three angles a day.
+- **Intermittent fasting** — optional, off unless a plan opts in. Pick 16:8,
+  18:6 or 20:4; log when you last ate and when you first ate again, and a fast
+  is credited to the day it *ends*. Today shows it as a live ring that counts
+  up or down, Progress charts the week against the goal, and a daily task can
+  tick itself when the goal is reached.
 - **Today** — the day's deficit against what it needed to be, calories against
-  their ceiling and floor, and each measurement's movement since baseline.
+  their ceiling and floor, each measurement's movement since baseline, and the
+  fasting ring for the fast ending today.
 - **Progress** — the deficit burndown, pace and projection, current-versus-best
   statistics, four charts, and the photo timeline.
 - **Settings** — timezone, password, and a CSV export of everything.

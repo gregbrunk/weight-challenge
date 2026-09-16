@@ -24,6 +24,8 @@ const DEFAULTS: Omit<PlanFormValues, "startDate"> = {
   startVo2Max: "",
   startSystolic: "",
   startDiastolic: "",
+  // Off by default: a plan shouldn't acquire a feature you didn't ask for.
+  fastingPlan: "",
 };
 
 /**

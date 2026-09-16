@@ -28,6 +28,7 @@ const plan: PlanInput = {
   startVo2Max: 37.2,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
 };
 
 const manualTask: TaskInput = {
@@ -205,33 +206,80 @@ describe("auto-linked tasks", () => {
     diastolic: null,
     consumedCals: null,
     activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
     ...fields,
   });
 
+  /** The rules read a map now, because a fast needs the day before as well. */
+  const on = (date: PlainDate, fields: Partial<EntryInput>) =>
+    new Map<PlainDate, EntryInput>([[date, entry(date, fields)]]);
+
   it("counts a day where active calories reached the floor", () => {
     expect(
-      isAutoRuleSatisfied("activeCalsAtLeastTarget", entry("d", { activeCals: 1200 }), plan),
+      isAutoRuleSatisfied("activeCalsAtLeastTarget", "d", on("d", { activeCals: 1200 }), plan),
     ).toBe(true);
     expect(
-      isAutoRuleSatisfied("activeCalsAtLeastTarget", entry("d", { activeCals: 1199 }), plan),
+      isAutoRuleSatisfied("activeCalsAtLeastTarget", "d", on("d", { activeCals: 1199 }), plan),
     ).toBe(false);
   });
 
   it("counts a day where eaten calories stayed under the ceiling", () => {
     // The ceiling for this plan is 1,938.06.
     expect(
-      isAutoRuleSatisfied("consumedCalsAtMostCeiling", entry("d", { consumedCals: 1900 }), plan),
+      isAutoRuleSatisfied("consumedCalsAtMostCeiling", "d", on("d", { consumedCals: 1900 }), plan),
     ).toBe(true);
     expect(
-      isAutoRuleSatisfied("consumedCalsAtMostCeiling", entry("d", { consumedCals: 2100 }), plan),
+      isAutoRuleSatisfied("consumedCalsAtMostCeiling", "d", on("d", { consumedCals: 2100 }), plan),
     ).toBe(false);
   });
 
   it("treats an unlogged day as not done, rather than as met", () => {
-    expect(isAutoRuleSatisfied("activeCalsAtLeastTarget", undefined, plan)).toBe(false);
     expect(
-      isAutoRuleSatisfied("activeCalsAtLeastTarget", entry("d", { activeCals: null }), plan),
+      isAutoRuleSatisfied("activeCalsAtLeastTarget", "d", new Map(), plan),
     ).toBe(false);
+    expect(
+      isAutoRuleSatisfied("activeCalsAtLeastTarget", "d", on("d", { activeCals: null }), plan),
+    ).toBe(false);
+  });
+
+  describe("the fasting rule", () => {
+    /** The shared plan with an 18:6 schedule switched on. */
+    const fasting: PlanInput = { ...plan, fastingPlan: "fast18_6" };
+
+    const logged = (endHoursAfterStart: number | null) => {
+      const start = new Date("2026-08-07T00:30:00Z");
+      const rows = new Map<PlainDate, EntryInput>([
+        ["2026-08-06", entry("2026-08-06", { fastStartAt: start })],
+      ]);
+      if (endHoursAfterStart !== null) {
+        rows.set(
+          "2026-08-07",
+          entry("2026-08-07", {
+            fastEndAt: new Date(start.getTime() + endHoursAfterStart * 3_600_000),
+          }),
+        );
+      }
+      return rows;
+    };
+
+    it("ticks the day the fast ended once it reaches the goal", () => {
+      expect(isAutoRuleSatisfied("fastGoalMet", "2026-08-07", logged(18), fasting)).toBe(true);
+      expect(isAutoRuleSatisfied("fastGoalMet", "2026-08-07", logged(17), fasting)).toBe(false);
+    });
+
+    it("never ticks the day the fast began", () => {
+      expect(isAutoRuleSatisfied("fastGoalMet", "2026-08-06", logged(18), fasting)).toBe(false);
+    });
+
+    it("waits for the end time rather than ticking a fast still running", () => {
+      // No end logged: past the goal or not, there is no verdict yet.
+      expect(isAutoRuleSatisfied("fastGoalMet", "2026-08-07", logged(null), fasting)).toBe(false);
+    });
+
+    it("never ticks when the plan has fasting switched off", () => {
+      expect(isAutoRuleSatisfied("fastGoalMet", "2026-08-07", logged(18), plan)).toBe(false);
+    });
   });
 
   it("builds a streak from logged calories without any ticks", () => {

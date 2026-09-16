@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 import { hasValidSession } from "@/lib/auth/server";
 import { buildCsv, exportFilename, type ExportPlan } from "@/lib/csv";
 import { getEntryInputs, listPlans, toPlanInput } from "@/lib/plans";
-import { getToday } from "@/lib/timezone-server";
+import { getTimeZone, getToday } from "@/lib/timezone-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,8 +31,9 @@ export async function GET() {
     })),
   );
 
-  const csv = buildCsv(exported);
-  const filename = exportFilename(await getToday());
+  const [timeZone, today] = await Promise.all([getTimeZone(), getToday()]);
+  const csv = buildCsv(exported, timeZone);
+  const filename = exportFilename(today);
 
   return new NextResponse(csv, {
     headers: {

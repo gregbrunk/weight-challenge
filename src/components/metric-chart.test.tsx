@@ -58,6 +58,7 @@ const plan: import("@/lib/calc").PlanInput = {
   startVo2Max: 37.2,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
 };
 
 function entry(date: string, weight: number | null): import("@/lib/calc").EntryInput {
@@ -70,6 +71,8 @@ function entry(date: string, weight: number | null): import("@/lib/calc").EntryI
     diastolic: null,
     consumedCals: null,
     activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
   };
 }
 

@@ -19,6 +19,7 @@ const plan: PlanInput = {
   startVo2Max: 37.2,
   startSystolic: 134,
   startDiastolic: 91,
+  fastingPlan: null,
 };
 
 function entry(date: string, fields: Partial<EntryInput> = {}): EntryInput {
@@ -31,6 +32,8 @@ function entry(date: string, fields: Partial<EntryInput> = {}): EntryInput {
     diastolic: null,
     consumedCals: null,
     activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
     ...fields,
   };
 }

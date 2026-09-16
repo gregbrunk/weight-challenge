@@ -28,6 +28,38 @@ import { addDays, compareDates, daysBetween, type PlainDate } from "./date";
 // Shapes
 // ---------------------------------------------------------------------------
 
+/**
+ * The intermittent-fasting schedules on offer, named fast:eat.
+ *
+ * Only the fasting hours reach the math — the eating window is whatever is left
+ * of the day, so it is derived rather than stored and the two can never
+ * disagree. Null on a plan means fasting is off.
+ */
+export type FastingPlan = "fast16_8" | "fast18_6" | "fast20_4";
+
+export const FASTING_PLANS = ["fast16_8", "fast18_6", "fast20_4"] as const;
+
+const FASTING_PLAN_HOURS: Record<FastingPlan, number> = {
+  fast16_8: 16,
+  fast18_6: 18,
+  fast20_4: 20,
+};
+
+export function isFastingPlan(value: unknown): value is FastingPlan {
+  return typeof value === "string" && value in FASTING_PLAN_HOURS;
+}
+
+/** Hours you must fast for the day to count. */
+export function fastingPlanHours(plan: FastingPlan): number {
+  return FASTING_PLAN_HOURS[plan];
+}
+
+/** "16:8" — fasting hours against the eating window that makes up the rest. */
+export function fastingPlanLabel(plan: FastingPlan): string {
+  const hours = FASTING_PLAN_HOURS[plan];
+  return `${hours}:${24 - hours}`;
+}
+
 /** The five inputs plus the baseline measurements, as configured on the Plan screen. */
 export interface PlanInput {
   startDate: PlainDate;
@@ -43,6 +75,8 @@ export interface PlanInput {
   startVo2Max: number | null;
   startSystolic: number | null;
   startDiastolic: number | null;
+  /** Null switches intermittent fasting off, and it vanishes from every screen. */
+  fastingPlan: FastingPlan | null;
 }
 
 /** One day's log. Every measurement is optional and arrives on its own schedule. */
@@ -55,6 +89,13 @@ export interface EntryInput {
   diastolic: number | null;
   consumedCals: number | null;
   activeCals: number | null;
+  /**
+   * The fast *beginning* this evening, and the one *ending* this morning. They
+   * belong to two different fasts: a whole fast is yesterday's `fastStartAt`
+   * paired with today's `fastEndAt`. See `fasting.ts`, which does the pairing.
+   */
+  fastStartAt: Date | null;
+  fastEndAt: Date | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,6 +115,8 @@ export interface PlanTargets {
   targetWeight: number | null;
   /** Last day of the plan, inclusive. */
   endDate: PlainDate;
+  /** Hours a fast must reach to count, or null when fasting is off. */
+  fastingHours: number | null;
 }
 
 export function planTargets(plan: PlanInput): PlanTargets {
@@ -87,6 +130,7 @@ export function planTargets(plan: PlanInput): PlanTargets {
     // explain it: eat what you burn, minus the deficit you owe.
     allowedFoodCals: plan.rmr + plan.targetActiveCals - necessaryDailyDeficit,
     targetActiveCals: plan.targetActiveCals,
+    fastingHours: plan.fastingPlan === null ? null : fastingPlanHours(plan.fastingPlan),
     targetWeight:
       plan.startWeight === null ? null : plan.startWeight - plan.lbsToLose,
     endDate: addDays(plan.startDate, plan.days - 1),

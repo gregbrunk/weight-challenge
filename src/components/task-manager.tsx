@@ -31,12 +31,15 @@ export function TaskManager({
   tasks,
   foodCeiling,
   exerciseFloor,
+  fastingGoal,
 }: {
   tasks: ManagedTask[];
   foodCeiling: string;
   exerciseFloor: string;
+  /** The plan's fasting goal, e.g. "18h", or null when fasting is off. */
+  fastingGoal: string | null;
 }) {
-  const ruleOptions: { value: TaskAutoRule; label: string }[] = [
+  const ruleOptions: RuleOption[] = [
     { value: "manual", label: AUTO_RULE_LABELS.manual },
     {
       value: "activeCalsAtLeastTarget",
@@ -46,6 +49,17 @@ export function TaskManager({
       value: "consumedCalsAtMostCeiling",
       label: `Ticks when eaten calories stay under ${foodCeiling}`,
     },
+    // Offered only when the plan fasts. A task pinned to a goal the plan
+    // doesn't have could never tick, which would read as a broken habit
+    // rather than a setting that doesn't apply.
+    ...(fastingGoal === null
+      ? []
+      : [
+          {
+            value: "fastGoalMet" as const,
+            label: `Ticks when your fast reaches ${fastingGoal}`,
+          },
+        ]),
   ];
 
   return (
@@ -74,6 +88,24 @@ export function TaskManager({
   );
 }
 
+interface RuleOption {
+  value: TaskAutoRule;
+  label: string;
+}
+
+/**
+ * The options a row may show, always including the rule it already uses.
+ *
+ * Turning fasting off withdraws the fasting option, and a select whose value
+ * isn't among its options falls back to the first one — so saving an unrelated
+ * rename would quietly convert a fasting task into a manual one.
+ */
+function optionsIncluding(options: RuleOption[], rule: TaskAutoRule): RuleOption[] {
+  return options.some((option) => option.value === rule)
+    ? options
+    : [...options, { value: rule, label: AUTO_RULE_LABELS[rule] }];
+}
+
 function TaskRow({
   task,
   ruleOptions,
@@ -81,7 +113,7 @@ function TaskRow({
   isLast,
 }: {
   task: ManagedTask;
-  ruleOptions: { value: TaskAutoRule; label: string }[];
+  ruleOptions: RuleOption[];
   isFirst: boolean;
   isLast: boolean;
 }) {
@@ -129,7 +161,7 @@ function TaskRow({
               className="field-input"
               defaultValue={task.autoRule}
             >
-              {ruleOptions.map((option) => (
+              {optionsIncluding(ruleOptions, task.autoRule).map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -242,11 +274,7 @@ function TaskRow({
   );
 }
 
-function AddTaskForm({
-  ruleOptions,
-}: {
-  ruleOptions: { value: TaskAutoRule; label: string }[];
-}) {
+function AddTaskForm({ ruleOptions }: { ruleOptions: RuleOption[] }) {
   const [state, formAction] = useActionState(createTaskAction, initialTaskFormState);
   const id = useId();
 

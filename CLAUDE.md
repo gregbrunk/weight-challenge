@@ -29,6 +29,26 @@ Break these and things go subtly wrong rather than loudly wrong.
   for this deliberately (Sep 2026); don't "fix" it back to `false`.
 - **Dates are calendar days, not instants.** `src/lib/date.ts` uses
   `YYYY-MM-DD` strings pinned to UTC noon. Never `new Date()` arithmetic.
+
+  Fast start and end times are the one exception, and a deliberate one: they
+  are real instants (`@db.Timestamptz`), because a fast spanning a
+  daylight-saving change lasted the hours it lasted, not the hours the wall
+  clock claims — 6:30pm to 12:30pm across a spring-forward is seventeen, not
+  eighteen. Convert between instants and wall-clock times only through
+  `instantFromZonedTime` / `zonedMinutesOf` in `timezone.ts`, which pick
+  deliberately on the two days a year when a local time is skipped or repeated.
+- **A fast belongs to the day it ends.** `DailyEntry` carries two halves of two
+  *different* fasts: `fastStartAt` is the one beginning that evening,
+  `fastEndAt` the one finishing that morning. A whole fast is day D−1's start
+  paired with day D's end, credited to D. `fastForDay` in `src/lib/fasting.ts`
+  is the only place that pairing happens — never re-derive it at a call site.
+
+  Two consequences that look like bugs: a plan's **first day can never be
+  credited a fast** (its start would predate the plan), so it is excluded from
+  every denominator rather than counted as a failure; and a fast is **only
+  judged once closed** — nineteen hours into an eighteen-hour goal is not a
+  success, because you may have eaten at eleven and not said so yet. That is
+  why the end time is editable and not just a button.
 - **"Today" comes from the app's timezone setting**, not the server or the
   browser: `getToday()` in `src/lib/timezone-server.ts`. Defaults to
   `America/Denver`. The server runs in UTC and would be a day ahead in the
@@ -87,6 +107,11 @@ Each of these cost real time. They are fixed, but they recur if you undo them.
 - **Recharts puts a `<Line>`'s `className` on the wrapping `<g>`, not the
   `<path>`.** The stylesheet reaches strokes with a descendant selector. Get it
   wrong and every chart silently renders in Recharts' default blue.
+
+  It is not uniform, so check rather than assume: a `<Cell>`'s class lands on
+  the `<path>` itself (`path.fasting-bar-met`), while a `<ReferenceLine>`'s
+  lands on a wrapping `<g>` (`.fasting-goal-line line`). Both are asserted in
+  `fasting-week-chart.test.tsx` against the real rendered SVG.
 - **Client components on the Log screen seed state from props**, so the day's
   subtree is keyed by date. Remove that key and arrowing between days shows the
   previous day's numbers — real values attached to the wrong date.

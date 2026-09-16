@@ -21,6 +21,7 @@ const AUTO_RULES: TaskAutoRule[] = [
   "manual",
   "activeCalsAtLeastTarget",
   "consumedCalsAtMostCeiling",
+  "fastGoalMet",
 ];
 
 function parseAutoRule(value: unknown): TaskAutoRule | null {
@@ -143,7 +144,7 @@ export async function toggleTaskAction(input: {
   }
 
   if (task.autoRule !== "manual") {
-    return { ok: false, error: "This task ticks itself from your logged calories." };
+    return { ok: false, error: "This task ticks itself from what you've logged." };
   }
 
   const planInput = toPlanInput(plan);

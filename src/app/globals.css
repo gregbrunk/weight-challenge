@@ -1671,3 +1671,236 @@ span.task-control {
 .calendar-key .calendar-cell:first-child {
   margin-left: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   The fasting timer
+   ---------------------------------------------------------------------------
+   A ring with the numbers stacked inside it. The SVG is square and scales with
+   its container; the face is absolutely positioned over it rather than being
+   drawn as SVG text, so the type inherits the app's fonts and line breaking
+   instead of needing its own metrics. */
+
+.fast-timer {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  margin-inline: auto;
+  aspect-ratio: 1;
+}
+
+.fast-timer-ring {
+  width: 100%;
+  height: 100%;
+  /* Start the arc at twelve o'clock rather than three. */
+  transform: rotate(-90deg);
+}
+
+.fast-timer-track,
+.fast-timer-progress {
+  fill: none;
+  stroke-width: 18;
+  stroke-linecap: round;
+}
+
+.fast-timer-track {
+  stroke: var(--color-well);
+}
+
+.fast-timer-progress {
+  transition: stroke-dashoffset var(--dur-medium) var(--ease-standard);
+}
+
+.fast-timer-progress[data-tone="primary"] {
+  stroke: var(--color-primary);
+}
+
+.fast-timer-progress[data-tone="success"] {
+  stroke: var(--color-success);
+}
+
+.fast-timer-progress[data-tone="danger"] {
+  stroke: var(--color-danger);
+}
+
+/* A ring redrawn every second has no business animating for anyone who asked
+   the system to stop moving things. */
+@media (prefers-reduced-motion: reduce) {
+  .fast-timer-progress {
+    transition: none;
+  }
+}
+
+.fast-timer-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  /* Clear of the stroke, so long captions never collide with the ring. */
+  padding: 22%;
+  text-align: center;
+}
+
+.fast-timer-label {
+  font-size: var(--text-body-md);
+  color: var(--color-text-muted);
+}
+
+.fast-timer-value {
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The "nothing to show" state is a sentence, not a number. */
+.fast-timer-value-quiet {
+  font-size: var(--text-title-md);
+  font-weight: var(--weight-semibold);
+}
+
+.fast-timer-caption {
+  font-size: var(--text-body-md);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fast-timer-verdict {
+  width: 38%;
+  height: auto;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fast-timer-verdict[data-tone="success"] {
+  stroke: var(--color-success-text);
+}
+
+.fast-timer-verdict[data-tone="danger"] {
+  stroke: var(--color-danger-text);
+}
+
+.fast-timer-modes {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding: var(--space-2xs);
+  background: var(--color-well);
+  border-radius: var(--radius-full);
+  margin-inline: auto;
+}
+
+.fast-timer-mode {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-label-lg);
+  font-weight: var(--weight-medium);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-short) var(--ease-standard),
+    color var(--dur-short) var(--ease-standard);
+}
+
+.fast-timer-mode[data-active] {
+  background: var(--color-card);
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.fast-timer-ends {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  text-align: center;
+  margin-top: var(--space-xs);
+}
+
+.fast-timer-end-value {
+  font-size: var(--text-body-lg);
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-2xs);
+}
+
+/* ---------------------------------------------------------------------------
+   The fasting week
+   ---------------------------------------------------------------------------
+   Recharts writes `fill` as an SVG presentation attribute, and browsers do not
+   resolve var() inside those — the same reason the line colours above are
+   reached through classes rather than props. A Cell's className lands on the
+   <path> it draws, so these apply directly. */
+
+/* A Cell's className lands on the <path> it draws, unlike a Line's — verified
+   against the rendered SVG, not assumed, and asserted in the chart's test. */
+path.fasting-bar-met {
+  fill: var(--color-success);
+}
+
+path.fasting-bar-missed {
+  fill: var(--color-danger);
+}
+
+/* A ReferenceLine, however, IS wrapped in a <g>, so its stroke has to be
+   reached through a descendant selector the way the line charts' are. */
+.fasting-goal-line line {
+  stroke: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* A band rather than the line cursor the day charts use: these are bars, and a
+   hairline between two of them doesn't say which one is being read. */
+.chart-cursor-band {
+  fill: var(--color-emphasis);
+  opacity: 0.45;
+}
+
+/* ---------------------------------------------------------------------------
+   Fasting statistics */
+
+.fasting-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+@media (min-width: 640px) {
+  .fasting-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.fasting-stat-value {
+  font-size: var(--text-headline);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+.fasting-stat-caption {
+  font-size: var(--text-body-md);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2xs);
+}
+
+.fasting-meter {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-well);
+  overflow: hidden;
+}
+
+.fasting-meter-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+}
+
+.fasting-meter-fill[data-tone="success"] {
+  background: var(--color-success);
+}

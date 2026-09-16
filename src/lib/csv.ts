@@ -13,6 +13,8 @@
 import type { EntryInput, PlanInput } from "./calc";
 import { dayMetrics, planTargets } from "./calc";
 import { daysBetween } from "./date";
+import { fastForDay } from "./fasting";
+import { toTimeInputValue } from "./timezone";
 
 /**
  * Escapes one field per RFC 4180.
@@ -49,6 +51,14 @@ export const EXPORT_COLUMNS = [
   "active_cals",
   "daily_deficit",
   "deficit_to_plan",
+  // Fasting spans two rows, so the columns say plainly which is which. The
+  // times are the two halves of two *different* fasts, logged on the day each
+  // happened; the hours and the verdict belong to the fast that ENDED on this
+  // row, which is the one this day is credited with.
+  "fast_started",
+  "fast_ended",
+  "fast_hours",
+  "fast_goal_met",
 ] as const;
 
 export interface ExportPlan {
@@ -65,15 +75,21 @@ export interface ExportPlan {
  * floating-point noise (a deficit-to-plan of 520.3333333333303 helps nobody),
  * while the measurements are written exactly as they were entered.
  */
-export function buildCsv(plans: readonly ExportPlan[]): string {
+export function buildCsv(
+  plans: readonly ExportPlan[],
+  /** Fast times are written as the wall-clock times they were logged at. */
+  timeZone: string,
+): string {
   const lines = [toCsvRow(EXPORT_COLUMNS as unknown as string[])];
 
   for (const { name, status, plan, entries } of plans) {
     const targets = planTargets(plan);
     const sorted = [...entries].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    const byDate = new Map(entries.map((row) => [row.date, row]));
 
     for (const entry of sorted) {
       const metrics = dayMetrics(plan, entry, targets);
+      const fast = fastForDay(plan, entry.date, byDate);
 
       lines.push(
         toCsvRow([
@@ -91,6 +107,12 @@ export function buildCsv(plans: readonly ExportPlan[]): string {
           entry.activeCals,
           metrics.dailyDeficit === null ? null : round(metrics.dailyDeficit),
           metrics.deficitToPlan === null ? null : round(metrics.deficitToPlan),
+          entry.fastStartAt === null ? null : toTimeInputValue(entry.fastStartAt, timeZone),
+          entry.fastEndAt === null ? null : toTimeInputValue(entry.fastEndAt, timeZone),
+          // Empty, not zero, for a day with no completed fast — the same rule
+          // the measurements follow.
+          fast?.hours == null ? null : round(fast.hours),
+          fast === null || fast.status !== "complete" ? null : fast.met ? "yes" : "no",
         ]),
       );
     }

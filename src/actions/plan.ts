@@ -34,6 +34,7 @@ function parse(formData: FormData) {
     startVo2Max: formData.get("startVo2Max"),
     startSystolic: formData.get("startSystolic"),
     startDiastolic: formData.get("startDiastolic"),
+    fastingPlan: formData.get("fastingPlan"),
   });
 }
 
@@ -54,6 +55,7 @@ function toFields(parsed: ReturnType<typeof parse> & { success: true }): PlanFie
     startVo2Max: data.startVo2Max,
     startSystolic: data.startSystolic,
     startDiastolic: data.startDiastolic,
+    fastingPlan: data.fastingPlan,
   };
 }
 

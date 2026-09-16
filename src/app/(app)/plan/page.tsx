@@ -5,7 +5,7 @@ import { activatePlanAction, archiveCurrentPlanAction } from "@/actions/plan";
 import { getActivePlan, listArchivedPlans, toPlanInput } from "@/lib/plans";
 import { listTasks, toTaskInput } from "@/lib/tasks";
 import { TaskManager, type ManagedTask } from "@/components/task-manager";
-import { planTargets } from "@/lib/calc";
+import { fastingPlanLabel, planTargets } from "@/lib/calc";
 import { formatLong } from "@/lib/date";
 import { formatCalories, formatDays, formatWeight } from "@/lib/format";
 import type { Plan } from "@/generated/prisma/client";
@@ -64,8 +64,16 @@ export default async function PlanPage() {
             label="Deficit needed"
             value={formatCalories(targets.necessaryDailyDeficit)}
             unit="cal"
-            last
+            last={planInput.fastingPlan === null}
           />
+          {planInput.fastingPlan !== null && (
+            <Figure
+              label="Fasting goal"
+              value={fastingPlanLabel(planInput.fastingPlan)}
+              unit="h fasting"
+              last
+            />
+          )}
         </section>
 
         <section className="card" aria-labelledby="goal-heading">
@@ -135,6 +143,7 @@ export default async function PlanPage() {
           tasks={managedTasks}
           foodCeiling={`${formatCalories(targets.allowedFoodCals)} cal`}
           exerciseFloor={`${formatCalories(targets.targetActiveCals)} cal`}
+          fastingGoal={targets.fastingHours === null ? null : `${targets.fastingHours}h`}
         />
       </section>
 

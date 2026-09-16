@@ -15,7 +15,7 @@ import "server-only";
 import type { DailyEntry, Plan } from "@/generated/prisma/client";
 import type { PlanFormValues } from "@/components/plan-form";
 import { prisma } from "./db";
-import type { EntryInput, PlanInput } from "./calc";
+import type { EntryInput, FastingPlan, PlanInput } from "./calc";
 import type { PlainDate } from "./date";
 import { numberToInputValue } from "./format";
 import { fractionToPercent } from "./validation";
@@ -59,6 +59,7 @@ export function toPlanInput(plan: Plan): PlanInput {
     startVo2Max: plan.startVo2Max,
     startSystolic: plan.startSystolic,
     startDiastolic: plan.startDiastolic,
+    fastingPlan: plan.fastingPlan,
   };
 }
 
@@ -72,6 +73,8 @@ export function toEntryInput(entry: DailyEntry): EntryInput {
     diastolic: entry.diastolic,
     consumedCals: entry.consumedCals,
     activeCals: entry.activeCals,
+    fastStartAt: entry.fastStartAt,
+    fastEndAt: entry.fastEndAt,
   };
 }
 
@@ -116,6 +119,8 @@ export interface PlanFields {
   startVo2Max: number | null;
   startSystolic: number | null;
   startDiastolic: number | null;
+  /** Null switches fasting off for the plan. */
+  fastingPlan: FastingPlan | null;
 }
 
 function toDbFields(fields: PlanFields) {
@@ -201,6 +206,8 @@ export function planToFormValues(plan: Plan): PlanFormValues {
     startVo2Max: numberToInputValue(plan.startVo2Max),
     startSystolic: numberToInputValue(plan.startSystolic),
     startDiastolic: numberToInputValue(plan.startDiastolic),
+    // "" is the form's spelling of "fasting off".
+    fastingPlan: plan.fastingPlan ?? "",
   };
 }
 
@@ -261,6 +268,8 @@ export async function getEntry(
 
 /** The measurements a day can hold. Undefined means "leave alone". */
 export type EntryFields = Partial<{
+  fastStartAt: Date | null;
+  fastEndAt: Date | null;
   weight: number | null;
   bodyFat: number | null;
   vo2Max: number | null;

@@ -83,3 +83,18 @@ export function formatLong(date: PlainDate): string {
   const d = toUtcNoon(date);
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 }
+
+/** 0 for Sunday through 6 for Saturday. */
+export function dayOfWeek(date: PlainDate): number {
+  return toUtcNoon(date).getUTCDay();
+}
+
+/** "Sun" — the weekday alone, for the fasting week's chart axis. */
+export function formatWeekday(date: PlainDate): string {
+  return WEEKDAYS[dayOfWeek(date)];
+}
+
+/** The Sunday on or before a date. Weeks in this app run Sunday to Saturday. */
+export function startOfWeek(date: PlainDate): PlainDate {
+  return addDays(date, -dayOfWeek(date));
+}
