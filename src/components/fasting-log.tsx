@@ -23,6 +23,18 @@ export interface FastingLogProps {
   startedLabel: string | null;
   /** True only on the real today, which is the only day "now" makes sense on. */
   isToday: boolean;
+  /**
+   * Present only on the plan's first day. That day's fast begins the evening
+   * *before* the plan, which has no row of its own — so the time is kept on the
+   * plan and edited here, on the one day it means anything.
+   */
+  preStart: {
+    value: string;
+    /** "Aug 31", the evening it refers to. */
+    dayLabel: string;
+    /** True when that evening is today, which is the only time "now" fits. */
+    offerNow: boolean;
+  } | null;
 }
 
 /**
@@ -45,9 +57,25 @@ export function FastingLog({
   canEnd,
   startedLabel,
   isToday,
+  preStart,
 }: FastingLogProps) {
   return (
     <div className="flex flex-col" style={{ gap: "var(--space-lg)" }}>
+      {/* First on the plan's first day, because chronologically it comes first:
+          it is the evening before day one, which the first meal below closes. */}
+      {preStart && (
+        <FastTimeField
+          date={date}
+          edge="preStart"
+          label={`Last meal on ${preStart.dayLabel}`}
+          initialValue={preStart.value}
+          disabled={false}
+          nowLabel="Start fast now"
+          offerNow={preStart.offerNow}
+          help="The evening before the plan began. Log it and day one counts like any other day; leave it blank and day one sits out."
+        />
+      )}
+
       <FastTimeField
         date={date}
         edge="end"
@@ -61,7 +89,9 @@ export function FastingLog({
             ? startedLabel
               ? `Ends the fast you started ${startedLabel}.`
               : "Ends the fast you started the day before."
-            : "No fast was started the day before, so there's nothing to end."
+            : preStart
+              ? "Log the evening before the plan above, and this opens up."
+              : "No fast was started the day before, so there's nothing to end."
         }
       />
 

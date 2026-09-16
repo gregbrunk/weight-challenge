@@ -60,6 +60,7 @@ export function toPlanInput(plan: Plan): PlanInput {
     startSystolic: plan.startSystolic,
     startDiastolic: plan.startDiastolic,
     fastingPlan: plan.fastingPlan,
+    preStartFastAt: plan.preStartFastAt,
   };
 }
 
@@ -213,6 +214,14 @@ export function planToFormValues(plan: Plan): PlanFormValues {
 
 export async function updatePlan(id: string, fields: PlanFields): Promise<Plan> {
   return prisma.plan.update({ where: { id }, data: toDbFields(fields) });
+}
+
+/**
+ * The last meal before the plan began — the one fast start with no day of its
+ * own, so it is stored on the plan rather than in an entry.
+ */
+export async function savePreStartFast(planId: string, at: Date | null): Promise<void> {
+  await prisma.plan.update({ where: { id: planId }, data: { preStartFastAt: at } });
 }
 
 export async function archivePlan(id: string): Promise<Plan> {

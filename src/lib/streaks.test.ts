@@ -29,6 +29,7 @@ const plan: PlanInput = {
   startSystolic: 134,
   startDiastolic: 91,
   fastingPlan: null,
+  preStartFastAt: null,
 };
 
 const manualTask: TaskInput = {
@@ -400,3 +401,95 @@ function addDaysLocal(date: PlainDate, days: number): PlainDate {
   const dt = new Date(Date.UTC(y, m - 1, d + days));
   return dt.toISOString().slice(0, 10);
 }
+
+describe("a fasting habit and the plan's first day", () => {
+  /**
+   * The bug this covers: `taskWindow` began at the plan's first day, which a
+   * fasting habit can never satisfy — its fast starts the evening before the
+   * plan. So a flawless record read as 2 of 3, the streak broke on day one, and
+   * the card contradicted the Progress figures, which already knew better.
+   */
+  const fasting: PlanInput = {
+    ...plan,
+    startDate: "2026-09-01",
+    fastingPlan: "fast18_6",
+  };
+
+  const task: TaskInput = {
+    id: "fast",
+    name: "Hit the fasting window",
+    position: 0,
+    autoRule: "fastGoalMet",
+    startDate: "2026-09-01",
+  };
+
+  const row = (date: PlainDate, fields: Partial<EntryInput>): EntryInput => ({
+    date,
+    weight: null,
+    bodyFat: null,
+    vo2Max: null,
+    systolic: null,
+    diastolic: null,
+    consumedCals: null,
+    activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
+    ...fields,
+  });
+
+  /** Days two and three both met — a perfect record for a plan starting the 1st. */
+  const perfect = new Map<PlainDate, EntryInput>([
+    ["2026-09-01", row("2026-09-01", { fastStartAt: new Date("2026-09-02T00:30:00Z") })],
+    [
+      "2026-09-02",
+      row("2026-09-02", {
+        fastEndAt: new Date("2026-09-02T18:30:00Z"),
+        fastStartAt: new Date("2026-09-03T00:30:00Z"),
+      }),
+    ],
+    ["2026-09-03", row("2026-09-03", { fastEndAt: new Date("2026-09-03T18:30:00Z") })],
+  ]);
+
+  it("starts counting on day two, so a flawless record reads as flawless", () => {
+    const stats = computeTaskStats(task, fasting, new Set(), perfect, "2026-09-03");
+
+    expect(stats.eligibleDays).toBe(2);
+    expect(stats.completedDays).toBe(2);
+    expect(stats.completionRate).toBe(1);
+    expect(stats.currentStreak).toBe(2);
+  });
+
+  it("starts on day one once the evening before the plan is recorded", () => {
+    const withPreStart: PlanInput = {
+      ...fasting,
+      preStartFastAt: new Date("2026-09-01T00:30:00Z"),
+    };
+    const alsoDayOne = new Map(perfect);
+    alsoDayOne.set(
+      "2026-09-01",
+      row("2026-09-01", {
+        fastEndAt: new Date("2026-09-01T18:30:00Z"),
+        fastStartAt: new Date("2026-09-02T00:30:00Z"),
+      }),
+    );
+
+    const stats = computeTaskStats(task, withPreStart, new Set(), alsoDayOne, "2026-09-03");
+
+    expect(stats.eligibleDays).toBe(3);
+    expect(stats.completedDays).toBe(3);
+    expect(stats.completionRate).toBe(1);
+    expect(stats.currentStreak).toBe(3);
+  });
+
+  it("leaves other auto-rules counting from day one as they always did", () => {
+    const calories: TaskInput = { ...task, autoRule: "activeCalsAtLeastTarget" };
+    const logged = new Map<PlainDate, EntryInput>([
+      ["2026-09-01", row("2026-09-01", { activeCals: 1300 })],
+      ["2026-09-02", row("2026-09-02", { activeCals: 1300 })],
+    ]);
+
+    const stats = computeTaskStats(calories, fasting, new Set(), logged, "2026-09-02");
+    expect(stats.eligibleDays).toBe(2);
+    expect(stats.completedDays).toBe(2);
+  });
+});

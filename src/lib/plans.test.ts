@@ -31,6 +31,7 @@ const plan: Plan = {
   startSystolic: 134,
   startDiastolic: 91,
   fastingPlan: null,
+  preStartFastAt: null,
   createdAt: new Date("2026-05-01T12:00:00Z"),
   updatedAt: new Date("2026-05-01T12:00:00Z"),
   archivedAt: new Date("2026-08-01T12:00:00Z"),

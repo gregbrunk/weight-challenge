@@ -30,6 +30,7 @@ const marchPlan: PlanInput = {
   startSystolic: 134,
   startDiastolic: 91,
   fastingPlan: null,
+  preStartFastAt: null,
 };
 
 /** Rows 3–16 of the sheet. Blank cells are null, exactly as they were blank there. */

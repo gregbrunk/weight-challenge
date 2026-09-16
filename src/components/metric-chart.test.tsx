@@ -59,6 +59,7 @@ const plan: import("@/lib/calc").PlanInput = {
   startSystolic: 134,
   startDiastolic: 91,
   fastingPlan: null,
+  preStartFastAt: null,
 };
 
 function entry(date: string, weight: number | null): import("@/lib/calc").EntryInput {

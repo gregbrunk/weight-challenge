@@ -12,7 +12,7 @@
 
 import type { EntryInput, PlanInput } from "./calc";
 import { dayMetrics, planTargets } from "./calc";
-import { daysBetween } from "./date";
+import { daysBetween, type PlainDate } from "./date";
 import { fastForDay } from "./fasting";
 import { toTimeInputValue } from "./timezone";
 
@@ -59,6 +59,9 @@ export const EXPORT_COLUMNS = [
   "fast_ended",
   "fast_hours",
   "fast_goal_met",
+  // The last meal before the plan began — the start day one's fast needs. It
+  // belongs to no day inside the plan, so it is written on the first row.
+  "pre_plan_fast_started",
 ] as const;
 
 export interface ExportPlan {
@@ -87,6 +90,12 @@ export function buildCsv(
     const sorted = [...entries].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const byDate = new Map(entries.map((row) => [row.date, row]));
 
+    // A pre-plan evening with nothing else logged on day one would otherwise
+    // have no row to be written on, and would vanish from the export.
+    if (plan.preStartFastAt !== null && !byDate.has(plan.startDate)) {
+      sorted.unshift(emptyEntry(plan.startDate));
+    }
+
     for (const entry of sorted) {
       const metrics = dayMetrics(plan, entry, targets);
       const fast = fastForDay(plan, entry.date, byDate);
@@ -113,6 +122,9 @@ export function buildCsv(
           // the measurements follow.
           fast?.hours == null ? null : round(fast.hours),
           fast === null || fast.status !== "complete" ? null : fast.met ? "yes" : "no",
+          entry.date === plan.startDate && plan.preStartFastAt !== null
+            ? toTimeInputValue(plan.preStartFastAt, timeZone)
+            : null,
         ]),
       );
     }
@@ -121,6 +133,22 @@ export function buildCsv(
   // A trailing newline: POSIX tools expect a final line terminator, and some
   // spreadsheet importers drop the last row without one.
   return `${lines.join("\r\n")}\r\n`;
+}
+
+/** A day with nothing logged, so a pre-plan evening still has a row to sit on. */
+function emptyEntry(date: PlainDate): EntryInput {
+  return {
+    date,
+    weight: null,
+    bodyFat: null,
+    vo2Max: null,
+    systolic: null,
+    diastolic: null,
+    consumedCals: null,
+    activeCals: null,
+    fastStartAt: null,
+    fastEndAt: null,
+  };
 }
 
 function round(value: number): number {

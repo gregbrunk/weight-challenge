@@ -558,6 +558,8 @@ function usePlanPreview(values: PlanFormValues) {
       startSystolic: null,
       startDiastolic: null,
       fastingPlan,
+      // The preview only needs targets; day one's creditability isn't one.
+      preStartFastAt: null,
     };
 
     const targets = planTargets(plan);

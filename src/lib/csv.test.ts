@@ -24,6 +24,7 @@ const plan: PlanInput = {
   startSystolic: 134,
   startDiastolic: 91,
   fastingPlan: null,
+  preStartFastAt: null,
 };
 
 const entries: EntryInput[] = [
@@ -312,5 +313,58 @@ describe("fasting columns", () => {
     expect(column(off[1], "fast_goal_met")).toBe("");
     // The raw times are still exported — they are data you entered.
     expect(column(off[1], "fast_ended")).toBe("12:30");
+  });
+});
+
+describe("the pre-plan evening column", () => {
+  const withPreStart: PlanInput = {
+    ...plan,
+    fastingPlan: "fast18_6",
+    // 6:30 PM Mountain on 2 March, the evening before a plan starting the 3rd.
+    preStartFastAt: new Date("2026-03-03T01:30:00Z"),
+  };
+
+  const rowsOf = (p: PlanInput, e: EntryInput[]) =>
+    buildCsv([{ name: "P", status: "active", plan: p, entries: e }], ZONE)
+      .trimEnd()
+      .split("\r\n")
+      .slice(1)
+      .map(splitCsvLine);
+
+  const column = (row: string[], name: (typeof EXPORT_COLUMNS)[number]) =>
+    row[EXPORT_COLUMNS.indexOf(name)];
+
+  it("writes it on the plan's first row and nowhere else", () => {
+    const rows = rowsOf(withPreStart, [entries[0], entries[1]]);
+
+    expect(column(rows[0], "pre_plan_fast_started")).toBe("18:30");
+    expect(column(rows[1], "pre_plan_fast_started")).toBe("");
+  });
+
+  it("credits day one's fast once that evening is present", () => {
+    const rows = rowsOf(withPreStart, [
+      // 12:30 PM on the 3rd — eighteen hours after the evening before.
+      { ...entries[0], fastEndAt: new Date("2026-03-03T19:30:00Z") },
+    ]);
+
+    expect(column(rows[0], "fast_hours")).toBe("18");
+    expect(column(rows[0], "fast_goal_met")).toBe("yes");
+  });
+
+  it("gives it a row of its own when day one has nothing else logged", () => {
+    // Otherwise a time you entered would exist only in the database, and an
+    // export that drops it isn't an export.
+    const rows = rowsOf(withPreStart, [entries[1]]);
+
+    expect(rows).toHaveLength(2);
+    expect(column(rows[0], "date")).toBe("2026-03-03");
+    expect(column(rows[0], "pre_plan_fast_started")).toBe("18:30");
+    expect(column(rows[0], "weight_lb")).toBe("");
+  });
+
+  it("stays empty for a plan that has none", () => {
+    const rows = rowsOf({ ...plan, fastingPlan: "fast18_6" }, [entries[0]]);
+    expect(column(rows[0], "pre_plan_fast_started")).toBe("");
+    expect(rows).toHaveLength(1);
   });
 });

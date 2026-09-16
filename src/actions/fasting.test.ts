@@ -20,6 +20,7 @@ vi.mock("@/lib/timezone-server", () => ({
 
 const saveEntryFields =
   vi.fn<(planId: string, date: string, fields: unknown) => Promise<unknown>>();
+const savePreStartFast = vi.fn<(planId: string, at: Date | null) => Promise<void>>();
 const getEntry = vi.fn<(planId: string, date: string) => Promise<unknown>>();
 const getActivePlan = vi.fn<() => Promise<unknown>>();
 
@@ -34,6 +35,7 @@ vi.mock("@/lib/plans", async () => {
     getEntry: (planId: string, date: string) => getEntry(planId, date),
     saveEntryFields: (planId: string, date: string, fields: unknown) =>
       saveEntryFields(planId, date, fields),
+    savePreStartFast: (planId: string, at: Date | null) => savePreStartFast(planId, at),
   };
 });
 
@@ -56,6 +58,7 @@ const plan = {
   startSystolic: null,
   startDiastolic: null,
   fastingPlan: "fast18_6",
+  preStartFastAt: null,
 };
 
 /** 6:30 PM Mountain on the 15th. */
@@ -234,5 +237,100 @@ describe("clearing and refusing", () => {
     });
 
     vi.useRealTimers();
+  });
+});
+
+
+describe("the evening before the plan", () => {
+  it("stores it on the plan, against the day before day one", () => {
+    // The plan starts 1 September, so 6:30 PM means 6:30 PM on 31 August —
+    // a day that has no entry, which is the whole reason it lives on the plan.
+    return saveFastTimeAction({
+      date: "2026-09-01",
+      edge: "preStart",
+      value: "18:30",
+    }).then((result) => {
+      expect(result).toEqual({ ok: true, value: "18:30" });
+      expect(savePreStartFast).toHaveBeenCalledWith(
+        "plan1",
+        new Date("2026-09-01T00:30:00Z"),
+      );
+      expect(saveEntryFields).not.toHaveBeenCalled();
+    });
+  });
+
+  it("clears it without touching any entry", async () => {
+    const result = await saveFastTimeAction({
+      date: "2026-09-01",
+      edge: "preStart",
+      value: "",
+    });
+
+    expect(result).toEqual({ ok: true, value: "" });
+    expect(savePreStartFast).toHaveBeenCalledWith("plan1", null);
+  });
+
+  it("refuses to be edited from any day but the first", async () => {
+    const result = await saveFastTimeAction({
+      date: "2026-09-05",
+      edge: "preStart",
+      value: "18:30",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "That time belongs to the plan's first day.",
+    });
+    expect(savePreStartFast).not.toHaveBeenCalled();
+  });
+
+  it("refuses a time later than day one's first meal", async () => {
+    // Correcting it must not invert the pair it already has.
+    getEntry.mockResolvedValue({ fastEndAt: new Date("2026-09-01T00:00:00Z") });
+
+    const result = await saveFastTimeAction({
+      date: "2026-09-01",
+      edge: "preStart",
+      value: "23:30",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "That's after the fast was ended the next day — check the time.",
+    });
+  });
+
+  it("tells you day one has no start yet, in its own words", async () => {
+    // Plainly different from "no fast was started the day before", because the
+    // fix is different: there is no previous day to go and edit.
+    const result = await saveFastTimeAction({
+      date: "2026-09-01",
+      edge: "end",
+      value: "12:30",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error:
+        "Nothing was logged for the evening before the plan started, so there's nothing to end.",
+    });
+  });
+
+  it("accepts day one's first meal once that evening is on the plan", async () => {
+    getActivePlan.mockResolvedValue({
+      ...plan,
+      preStartFastAt: new Date("2026-09-01T00:30:00Z"),
+    });
+
+    const result = await saveFastTimeAction({
+      date: "2026-09-01",
+      edge: "end",
+      value: "12:30",
+    });
+
+    expect(result).toEqual({ ok: true, value: "12:30" });
+    expect(saveEntryFields).toHaveBeenCalledWith("plan1", "2026-09-01", {
+      fastEndAt: new Date("2026-09-01T18:30:00Z"),
+    });
   });
 });

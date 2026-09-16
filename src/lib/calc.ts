@@ -77,6 +77,12 @@ export interface PlanInput {
   startDiastolic: number | null;
   /** Null switches intermittent fasting off, and it vanishes from every screen. */
   fastingPlan: FastingPlan | null;
+  /**
+   * The last meal the evening before day one. The only fast start with no day
+   * of its own, because the day it belongs to precedes the plan — and the only
+   * thing that can make day one creditable. Null means day one has no fast.
+   */
+  preStartFastAt: Date | null;
 }
 
 /** One day's log. Every measurement is optional and arrives on its own schedule. */

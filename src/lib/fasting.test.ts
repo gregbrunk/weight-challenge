@@ -36,6 +36,9 @@ const plan: PlanInput = {
   startSystolic: null,
   startDiastolic: null,
   fastingPlan: "fast18_6",
+  // Day one sits out unless this is recorded; the block at the end of this
+  // file covers what changes when it is.
+  preStartFastAt: null,
 };
 
 const noFasting: PlanInput = { ...plan, fastingPlan: null };
@@ -296,5 +299,81 @@ describe("timer arithmetic", () => {
 
   it("measures hours between two instants", () => {
     expect(hoursBetween(start, at("2026-09-03T06:30:00Z"))).toBe(6);
+  });
+});
+
+describe("the evening before the plan", () => {
+  /** The same plan, with the last meal before day one recorded at 6:30pm. */
+  const withPreStart: PlanInput = {
+    ...plan,
+    preStartFastAt: at("2026-09-01T00:30:00Z"),
+  };
+
+  it("makes day one creditable, which it otherwise never is", () => {
+    expect(isCreditable(plan, "2026-09-01")).toBe(false);
+    expect(isCreditable(withPreStart, "2026-09-01")).toBe(true);
+
+    expect(firstCreditableDate(plan)).toBe("2026-09-02");
+    expect(firstCreditableDate(withPreStart)).toBe("2026-09-01");
+  });
+
+  it("pairs with day one's first meal to make a whole fast", () => {
+    const logged = entries(
+      entry("2026-09-01", { fastEndAt: at("2026-09-01T18:30:00Z") }),
+    );
+
+    const credited = fastForDay(withPreStart, "2026-09-01", logged);
+    expect(credited?.status).toBe("complete");
+    expect(credited?.hours).toBe(18);
+    expect(credited?.met).toBe(true);
+  });
+
+  it("is ignored on every other day, which still read the previous row", () => {
+    // Day two's start is day one's evening, never the pre-plan one.
+    const logged = entries(
+      entry("2026-09-01", { fastStartAt: at("2026-09-02T00:30:00Z") }),
+      entry("2026-09-02", { fastEndAt: at("2026-09-02T18:30:00Z") }),
+    );
+
+    expect(fastForDay(withPreStart, "2026-09-02", logged)?.hours).toBe(18);
+  });
+
+  it("leaves day one uncredited when it is absent, rather than failed", () => {
+    const logged = entries(
+      entry("2026-09-01", { fastEndAt: at("2026-09-01T18:30:00Z") }),
+    );
+
+    // An end with nothing to pair it to is not a fast, and not a miss either.
+    expect(fastForDay(plan, "2026-09-01", logged)?.status).toBe("none");
+  });
+
+  it("grows every denominator by exactly one day", () => {
+    const without = fastingStats(plan, entries(), "2026-09-10")!;
+    const with_ = fastingStats(withPreStart, entries(), "2026-09-10")!;
+
+    expect(without.creditableDays).toBe(29);
+    expect(with_.creditableDays).toBe(30);
+    expect(with_.requiredHours).toBe(30 * 18);
+    expect(with_.firstDayCounts).toBe(true);
+    expect(without.firstDayCounts).toBe(false);
+
+    // Nine elapsed creditable days without it, ten with.
+    expect(with_.elapsedDays).toBe(without.elapsedDays + 1);
+  });
+
+  it("lets a flawless record reach 100% either way", () => {
+    // Day one met, day two met, and nothing else has happened yet.
+    const logged = entries(
+      entry("2026-09-01", {
+        fastEndAt: at("2026-09-01T18:30:00Z"),
+        fastStartAt: at("2026-09-02T00:30:00Z"),
+      }),
+      entry("2026-09-02", { fastEndAt: at("2026-09-02T18:30:00Z") }),
+    );
+
+    const stats = fastingStats(withPreStart, logged, "2026-09-02")!;
+    expect(stats.daysMet).toBe(2);
+    expect(stats.elapsedDays).toBe(2);
+    expect(stats.metRate).toBe(1);
   });
 });

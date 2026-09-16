@@ -477,8 +477,10 @@ function FastingFigures({ stats }: { stats: FastingStats }) {
         </div>
 
         <p className="fasting-stat-caption">
-          {stats.goalHours}h a day for {formatDays(stats.creditableDays)} of fasting —
-          every day of the plan but its first, which has no evening before it.
+          {stats.goalHours}h a day for {formatDays(stats.creditableDays)} of fasting
+          {stats.firstDayCounts
+            ? " — every day of the plan, including its first."
+            : " — every day of the plan but its first, whose evening before it isn't logged."}
         </p>
       </div>
     </>
